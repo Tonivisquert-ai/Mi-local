@@ -763,8 +763,15 @@ function showRoleScreen() {
 
 async function setRole(role) {
   if (role === 'manager') {
-    const pass = prompt('Contraseña de manager:');
-    if (pass !== MANAGER_PASS) { alert('Contraseña incorrecta'); return; }
+    if (!MANAGER_PASS) {
+      const newPass = prompt('Primera vez: elige una contraseña de manager:');
+      if (!newPass) return;
+      MANAGER_PASS = newPass;
+      localStorage.setItem('mgr_pass', newPass);
+    } else {
+      const pass = prompt('Contraseña de manager:');
+      if (pass !== MANAGER_PASS) { alert('Contraseña incorrecta'); return; }
+    }
     currentRole = 'manager';
     startApp();
   } else {
@@ -1165,14 +1172,19 @@ function toast(msg) {
 //  AUTO-LOAD saved credentials
 // ============================================================
 window.addEventListener('load', () => {
-  const url = localStorage.getItem('sb_url');
-  const key = localStorage.getItem('sb_key');
-  const pass = localStorage.getItem('mgr_pass');
-  if (url && key && pass) {
-    document.getElementById('sb-url').value = url;
-    document.getElementById('sb-key').value = key;
-    document.getElementById('manager-pass').value = pass;
-  }
+  // Credenciales precargadas — los trabajadores van directo al selector de rol
+  const SB_URL = 'https://fsevueuvdjuctiekiryz.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzZXZ1ZXV2ZGp1Y3RpZWtpcnl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1OTQ5NTksImV4cCI6MjA5MjE3MDk1OX0.t7ViNJ_dMn9n6l_sFqpqv73dH3HgMIXF46UCW_jGhWE';
+  const MGR = localStorage.getItem('mgr_pass') || '';
+  
+  supabase_client = supabase.createClient(SB_URL, SB_KEY);
+  MANAGER_PASS = MGR;
+  localStorage.setItem('sb_url', SB_URL);
+  localStorage.setItem('sb_key', SB_KEY);
+  
+  // Skip setup screen, go straight to role selector
+  document.getElementById('setup-screen').style.display = 'none';
+  showRoleScreen();
 });
 </script>
 </body>
