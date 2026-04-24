@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Local</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Instrument+Sans:wght@400;500;600&display=swap');
+
+:root {
+  --bg: #f7f5f0;
+  --surface: #ffffff;
+  --surface2: #f0ede6;
+  --border: #e0dbd0;
+  --ink: #1a1612;
+  --ink2: #6b6560;
+  --accent: #d4420a;
+  --accent-light: #fff0eb;
+  --green: #1a7a4a;
+  --green-light: #e8f7ef;
+  --yellow: #f5a623;
+  --yellow-light: #fff8eb;
+  --radius: 12px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Instrument Sans', sans-serif;
+  min-height: 100vh;
+}
+
+/* ---- SETUP SCREEN ---- */
+#setup-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--ink);
+}
+
+.setup-logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 6px;
+  letter-spacing: -1px;
+}
+
+.setup-sub {
+  color: #888;
+  font-size: 0.9rem;
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.setup-card {
+  background: #222;
+  border: 1px solid #333;
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 420px;
+  margin-bottom: 12px;
+}
+
+.setup-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.setup-input {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #fff;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-family: 'Instrument Sans', sans-serif;
+  font-size: 0.9rem;
+  margin-bottom: 14px;
+  outline: none;
+}
+
+.setup-input:focus { border-color: var(--accent); }
+
+.setup-btn {
+  width: 100%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 14px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+
+.setup-btn:hover { background: #b83508; }
+
+.setup-note {
+  color: #555;
+  font-size: 0.8rem;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.setup-note a { color: var(--accent); }
+
+/* ---- ROLE SELECTOR ---- */
+#role-screen {
+  display: none;
+  min-height: 100vh;
+  background: var(--ink);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 24px;
+}
+
+.role-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.role-sub { color: #777; font-size: 0.88rem; margin-bottom: 28px; text-align: center; }
+
+.role-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.role-card {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 14px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.role-card:hover { border-color: var(--accent); background: #252525; transform: translateY(-1px); }
+
+.role-icon {
+  font-size: 2rem;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2a2a2a;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.role-name { font-family: 'Syne', sans-serif; font-weight: 700; color: #fff; font-size: 1rem; }
+.role-desc { color: #666; font-size: 0.8rem; margin-top: 2px; }
+
+/* ---- MAIN APP ---- */
+#app { display: none; }
+
+.topbar {
+  background: var(--ink);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.topbar-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #fff;
+  letter-spacing: -0.5px;
+}
+
+.topbar-role {
+  font-size: 0.75rem;
+  background: var(--accent);
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 50px;
+  font-weight: 600;
+}
+
+.tabs {
+  display: flex;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  padding: 0 12px;
+  gap: 4px;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 14px 12px 12px;
+  font-family: 'Instrument Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.content { padding: 16px; max-width: 600px; margin: 0 auto; }
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow);
+}
+
+.card-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 14px;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* ---- INPUTS ---- */
+input[type="text"], input[type="time"], input[type="number"], input[type="password"], select, textarea {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-family: 'Instrument Sans', sans-serif;
+  font-size: 0.9rem;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input:focus, select:focus { border-color: var(--accent); }
+
+.row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+.row input, .row select { flex: 1; }
+
+/* ---- BUTTONS ---- */
+.btn {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Instrument Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.88rem;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #b83508; }
+.btn-green { background: var(--green); color: #fff; }
+.btn-green:hover { background: #145c38; }
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--ink2); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn-full { width: 100%; margin-top: 8px; }
+.btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+
+.del-btn {
+  background: none;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 3px 7px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.del-btn:hover { color: var(--accent); }
+
+/* ---- TASK ITEMS ---- */
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.task-item:last-child { border-bottom: none; }
+.task-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+.task-label { flex: 1; font-size: 0.9rem; }
+.task-label.done { text-decoration: line-through; color: var(--ink2); }
+
+.badge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 50px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.badge-mañana { background: #dbeafe; color: #1d4ed8; }
+.badge-tarde { background: #ede9fe; color: #6d28d9; }
+.badge-noche { background: #1e293b; color: #94a3b8; }
+.badge-todos { background: var(--accent-light); color: var(--accent); }
+
+/* ---- SHOP ITEMS ---- */
+.shop-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+.shop-item:last-child { border-bottom: none; }
+.shop-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--green); cursor: pointer; flex-shrink: 0; }
+.shop-label { flex: 1; font-size: 0.9rem; }
+.shop-label.done { text-decoration: line-through; color: var(--ink2); }
+.shop-qty { font-weight: 700; font-size: 0.85rem; color: var(--green); min-width: 36px; text-align: right; }
+
+/* ---- WORKERS ---- */
+.worker-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+
+.worker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.worker-name-big {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.pill {
+  font-size: 0.72rem;
+  padding: 3px 10px;
+  border-radius: 50px;
+  font-weight: 700;
+}
+.pill-in { background: var(--green-light); color: var(--green); }
+.pill-out { background: var(--surface2); color: var(--ink2); border: 1px solid var(--border); }
+
+.hours-badge {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.fichaje-log {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.log-row {
+  display: flex;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--ink2);
+  padding: 3px 0;
+  flex-wrap: wrap;
+}
+.log-time { color: var(--ink); font-weight: 600; }
+
+/* ---- SALARY CARDS ---- */
+.salary-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow);
+}
+.salary-name { font-weight: 600; font-size: 0.95rem; }
+.salary-detail { font-size: 0.78rem; color: var(--ink2); margin-top: 2px; }
+.salary-amount { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 800; color: var(--accent); }
+
+.total-bar {
+  background: var(--ink);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+}
+.total-label { font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+.total-amount { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; color: var(--yellow); }
+
+/* ---- TOAST ---- */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--ink);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0;
+  transition: all 0.3s;
+  z-index: 999;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---- WHATSAPP BAR ---- */
+.wa-bar {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+}
+.wa-btn {
+  background: #25D366;
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  padding: 13px 22px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(37,211,102,0.45);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.empty { color: var(--ink2); font-size: 0.85rem; text-align: center; padding: 18px 0; }
+
+.section { display: none; }
+.section.active { display: block; }
+
+.turno-filter {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.turno-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--ink2);
+  padding: 5px 14px;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.turno-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.section-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink2);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  margin-top: 4px;
+}
+
+.loading {
+  text-align: center;
+  padding: 30px;
+  color: var(--ink2);
+  font-size: 0.88rem;
+}
+
+.spinner {
+  display: inline-block;
+  width: 20px; height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- WORKER NAME INPUT (fichaje) ---- */
+#worker-login {
+  display: none;
+  min-height: 100vh;
+  background: var(--ink);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 24px;
+}
+</style>
+</head>
+<body>
+
+<!-- ========== SETUP SCREEN ========== -->
+<div id="setup-screen">
+  <div class="setup-logo">📋 Mi Local</div>
+  <p class="setup-sub">Conecta con tu base de datos Supabase</p>
+
+  <div class="setup-card">
+    <div class="setup-label">Supabase URL</div>
+    <input class="setup-input" id="sb-url" placeholder="https://xxxx.supabase.co" autocomplete="off">
+
+    <div class="setup-label">Supabase Anon Key</div>
+    <input class="setup-input" id="sb-key" placeholder="eyJhbGciOi..." type="password" autocomplete="off">
+
+    <div class="setup-label">Contraseña de manager (la que tú elijas)</div>
+    <input class="setup-input" id="manager-pass" placeholder="Ej: 1234local" type="password">
+
+    <button class="setup-btn" onclick="conectar()">Conectar y empezar →</button>
+  </div>
+
+  <p class="setup-note" id="setup-error" style="color:#e05c2a;margin-bottom:8px;display:none"></p>
+  <p class="setup-note">¿No tienes cuenta Supabase? Es gratis.<br><a href="https://supabase.com" target="_blank">supabase.com</a> → Sigue la guía de abajo ↓</p>
+</div>
+
+<!-- ========== ROLE SCREEN ========== -->
+<div id="role-screen" style="display:none;min-height:100vh;background:var(--ink);display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+  <div class="role-title">¿Quién eres?</div>
+  <p class="role-sub">Elige tu rol para continuar</p>
+  <div class="role-cards">
+    <div class="role-card" onclick="setRole('manager')">
+      <div class="role-icon">👔</div>
+      <div>
+        <div class="role-name">Manager</div>
+        <div class="role-desc">Gestionar tareas, ver fichajes y sueldos</div>
+      </div>
+    </div>
+    <div class="role-card" onclick="setRole('worker')">
+      <div class="role-icon">👷</div>
+      <div>
+        <div class="role-name">Trabajador</div>
+        <div class="role-desc">Fichar entrada/salida y ver mis tareas</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== WORKER LOGIN ========== -->
+<div id="worker-login">
+  <div class="setup-logo" style="font-size:1.8rem">¿Cómo te llamas?</div>
+  <p class="setup-sub">Elige tu nombre para fichar</p>
+  <div class="setup-card" style="max-width:340px">
+    <select class="setup-input" id="worker-select" style="background:#1a1a1a;color:#fff;border-color:#333">
+      <option value="">Selecciona tu nombre...</option>
+    </select>
+    <button class="setup-btn" onclick="workerLogin()" style="margin-top:10px">Entrar →</button>
+  </div>
+</div>
+
+<!-- ========== MAIN APP ========== -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-title">📋 Mi Local</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="topbar-role" id="role-badge">Manager</span>
+      <button class="btn btn-ghost btn-sm" onclick="cerrarSesion()" style="color:#aaa;border-color:#444;padding:5px 10px">Salir</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="main-tabs">
+    <button class="tab-btn active" onclick="showTab('tareas')">✅ Tareas</button>
+    <button class="tab-btn" onclick="showTab('compra')">🛒 Compra</button>
+    <button class="tab-btn" onclick="showTab('fichaje')">🕐 Fichaje</button>
+    <button class="tab-btn manager-only" onclick="showTab('sueldos')">💶 Sueldos</button>
+  </div>
+
+  <div class="content">
+
+    <!-- TAREAS -->
+    <div id="sec-tareas" class="section active">
+      <div class="card manager-only">
+        <div class="card-title">➕ Nueva tarea</div>
+        <div class="row">
+          <input type="text" id="tarea-texto" placeholder="Descripción...">
+          <select id="tarea-turno" style="max-width:110px">
+            <option value="mañana">🌅 Mañana</option>
+            <option value="tarde">🌆 Tarde</option>
+            <option value="noche">🌙 Noche</option>
+            <option value="todos">📌 Todos</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="addTarea()">Añadir tarea</button>
+      </div>
+
+      <div class="turno-filter">
+        <button class="turno-btn active" onclick="filterTareas('todos',this)">Todos</button>
+        <button class="turno-btn" onclick="filterTareas('mañana',this)">🌅 Mañana</button>
+        <button class="turno-btn" onclick="filterTareas('tarde',this)">🌆 Tarde</button>
+        <button class="turno-btn" onclick="filterTareas('noche',this)">🌙 Noche</button>
+      </div>
+
+      <div class="card">
+        <div id="lista-tareas"><div class="loading"><span class="spinner"></span>Cargando...</div></div>
+      </div>
+    </div>
+
+    <!-- COMPRA -->
+    <div id="sec-compra" class="section">
+      <div class="card manager-only">
+        <div class="card-title">➕ Añadir producto</div>
+        <div class="row">
+          <input type="text" id="compra-nombre" placeholder="Producto...">
+          <input type="text" id="compra-cantidad" placeholder="Cantidad" style="max-width:90px">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="addCompra()">Añadir</button>
+      </div>
+      <div class="card">
+        <div id="lista-compra"><div class="loading"><span class="spinner"></span>Cargando...</div></div>
+        <div class="manager-only" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="clearCompraHecha()">Limpiar marcados</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearCompraAll()">Vaciar lista</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FICHAJE -->
+    <div id="sec-fichaje" class="section">
+      <div class="card manager-only">
+        <div class="card-title">👤 Añadir trabajador</div>
+        <div class="row">
+          <input type="text" id="worker-nombre" placeholder="Nombre...">
+          <input type="number" id="worker-tarifa" placeholder="€/h" style="max-width:80px" step="0.5">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="addWorker()">Añadir</button>
+      </div>
+
+      <!-- Worker: fichar yo mismo -->
+      <div id="mi-fichaje" style="display:none">
+        <div class="card" style="border-color:var(--accent);border-width:2px">
+          <div class="card-title" id="mi-nombre-title">Mi fichaje</div>
+          <div id="mi-estado" style="margin-bottom:12px;font-size:0.9rem;color:var(--ink2)">Sin turno activo</div>
+          <button class="btn btn-full" id="btn-fichar-yo" onclick="ficharYo()">▶ Marcar entrada</button>
+        </div>
+      </div>
+
+      <div id="lista-workers"><div class="loading"><span class="spinner"></span>Cargando...</div></div>
+    </div>
+
+    <!-- SUELDOS -->
+    <div id="sec-sueldos" class="section manager-only-section">
+      <div id="resumen-sueldos"><div class="loading"><span class="spinner"></span>Cargando...</div></div>
+      <div class="card" style="margin-top:4px">
+        <div class="card-title">🗑️ Reiniciar período</div>
+        <p style="font-size:0.82rem;color:var(--ink2);margin-bottom:10px">Borra los fichajes al pagar para empezar nuevo período.</p>
+        <button class="btn btn-ghost btn-full" onclick="resetFichajes()" style="color:var(--accent);border-color:var(--accent)">Reiniciar fichajes</button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<!-- WhatsApp -->
+<div class="wa-bar" id="wa-bar" style="display:none">
+  <button class="wa-btn" onclick="compartirWhatsApp()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+    Enviar resumen
+  </button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+//  CONFIG & STATE
+// ============================================================
+let supabase_client = null;
+let MANAGER_PASS = '';
+let currentRole = null;   // 'manager' | 'worker'
+let currentWorker = null; // { id, nombre, tarifa }
+let filtroTurno = 'todos';
+let realtimeSub = null;
+
+// ============================================================
+//  SETUP
+// ============================================================
+async function conectar() {
+  const url = document.getElementById('sb-url').value.trim();
+  const key = document.getElementById('sb-key').value.trim();
+  const pass = document.getElementById('manager-pass').value.trim();
+  const errEl = document.getElementById('setup-error');
+
+  if (!url || !key || !pass) {
+    errEl.textContent = 'Rellena todos los campos'; errEl.style.display = 'block'; return;
+  }
+
+  errEl.style.display = 'none';
+  supabase_client = supabase.createClient(url, key);
+  MANAGER_PASS = pass;
+
+  // Test connection
+  const { error } = await supabase_client.from('tareas').select('id').limit(1);
+  if (error) {
+    errEl.textContent = 'Error de conexión: ' + error.message; errEl.style.display = 'block'; return;
+  }
+
+  localStorage.setItem('sb_url', url);
+  localStorage.setItem('sb_key', key);
+  localStorage.setItem('mgr_pass', pass);
+
+  showRoleScreen();
+}
+
+function showRoleScreen() {
+  document.getElementById('setup-screen').style.display = 'none';
+  const rs = document.getElementById('role-screen');
+  rs.style.display = 'flex';
+}
+
+async function setRole(role) {
+  if (role === 'manager') {
+    const pass = prompt('Contraseña de manager:');
+    if (pass !== MANAGER_PASS) { alert('Contraseña incorrecta'); return; }
+    currentRole = 'manager';
+    startApp();
+  } else {
+    // Load worker list
+    const { data } = await supabase_client.from('workers').select('id, nombre').order('nombre');
+    const sel = document.getElementById('worker-select');
+    sel.innerHTML = '<option value="">Selecciona tu nombre...</option>';
+    (data || []).forEach(w => {
+      const opt = document.createElement('option');
+      opt.value = w.id; opt.textContent = w.nombre; sel.appendChild(opt);
+    });
+    document.getElementById('role-screen').style.display = 'none';
+    document.getElementById('worker-login').style.display = 'flex';
+  }
+}
+
+async function workerLogin() {
+  const sel = document.getElementById('worker-select');
+  const id = parseInt(sel.value);
+  if (!id) { alert('Selecciona tu nombre'); return; }
+  const { data } = await supabase_client.from('workers').select('*').eq('id', id).single();
+  if (!data) { alert('Error al cargar'); return; }
+  currentWorker = data;
+  currentRole = 'worker';
+  document.getElementById('worker-login').style.display = 'none';
+  startApp();
+}
+
+function startApp() {
+  document.getElementById('role-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  document.getElementById('role-badge').textContent =
+    currentRole === 'manager' ? '👔 Manager' : `👷 ${currentWorker.nombre}`;
+
+  // Show/hide manager-only elements
+  document.querySelectorAll('.manager-only').forEach(el => {
+    el.style.display = currentRole === 'manager' ? '' : 'none';
+  });
+
+  if (currentRole === 'worker') {
+    document.getElementById('mi-fichaje').style.display = 'block';
+    document.getElementById('mi-nombre-title').textContent = `Mi fichaje — ${currentWorker.nombre}`;
+    // Hide sueldos tab
+    document.querySelectorAll('.manager-only').forEach(el => el.style.display = 'none');
+  }
+
+  document.getElementById('wa-bar').style.display =
+    currentRole === 'manager' ? 'block' : 'none';
+
+  loadAll();
+  subscribeRealtime();
+}
+
+function cerrarSesion() {
+  currentRole = null; currentWorker = null;
+  if (realtimeSub) supabase_client.removeChannel(realtimeSub);
+  document.getElementById('app').style.display = 'none';
+  showRoleScreen();
+}
+
+// ============================================================
+//  REALTIME
+// ============================================================
+function subscribeRealtime() {
+  realtimeSub = supabase_client
+    .channel('cambios')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'tareas' }, () => renderTareas())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'compra' }, () => renderCompra())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'fichajes' }, () => { renderWorkers(); if(currentRole==='manager') renderSueldos(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'workers' }, () => { renderWorkers(); if(currentRole==='manager') renderSueldos(); })
+    .subscribe();
+}
+
+function loadAll() { renderTareas(); renderCompra(); renderWorkers(); if(currentRole==='manager') renderSueldos(); }
+
+// ============================================================
+//  TABS
+// ============================================================
+function showTab(tab) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + tab).classList.add('active');
+  event.target.classList.add('active');
+  if (tab === 'sueldos') renderSueldos();
+}
+
+// ============================================================
+//  TAREAS
+// ============================================================
+async function addTarea() {
+  const texto = document.getElementById('tarea-texto').value.trim();
+  const turno = document.getElementById('tarea-turno').value;
+  if (!texto) return;
+  await supabase_client.from('tareas').insert({ texto, turno, done: false });
+  document.getElementById('tarea-texto').value = '';
+  toast('Tarea añadida ✓');
+}
+
+function filterTareas(turno, btn) {
+  filtroTurno = turno;
+  document.querySelectorAll('.turno-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTareas();
+}
+
+async function toggleTarea(id, done) {
+  await supabase_client.from('tareas').update({ done: !done }).eq('id', id);
+}
+
+async function deleteTarea(id) {
+  await supabase_client.from('tareas').delete().eq('id', id);
+}
+
+async function renderTareas() {
+  const lista = document.getElementById('lista-tareas');
+  const { data: tareas } = await supabase_client.from('tareas').select('*').order('id');
+  const filtered = filtroTurno === 'todos'
+    ? tareas || []
+    : (tareas || []).filter(t => t.turno === filtroTurno || t.turno === 'todos');
+
+  if (!filtered.length) { lista.innerHTML = '<div class="empty">No hay tareas en este turno</div>'; return; }
+
+  const badges = { mañana:'badge-mañana', tarde:'badge-tarde', noche:'badge-noche', todos:'badge-todos' };
+  const labels = { mañana:'Mañana', tarde:'Tarde', noche:'Noche', todos:'Todos' };
+
+  lista.innerHTML = filtered.map(t => `
+    <div class="task-item">
+      <input type="checkbox" ${t.done?'checked':''} onchange="toggleTarea(${t.id}, ${t.done})">
+      <span class="task-label ${t.done?'done':''}">${t.texto}</span>
+      <span class="badge ${badges[t.turno]}">${labels[t.turno]}</span>
+      ${currentRole==='manager' ? `<button class="del-btn" onclick="deleteTarea(${t.id})">✕</button>` : ''}
+    </div>`).join('');
+}
+
+// ============================================================
+//  COMPRA
+// ============================================================
+async function addCompra() {
+  const nombre = document.getElementById('compra-nombre').value.trim();
+  const cantidad = document.getElementById('compra-cantidad').value.trim() || '1';
+  if (!nombre) return;
+  await supabase_client.from('compra').insert({ nombre, cantidad, done: false });
+  document.getElementById('compra-nombre').value = '';
+  document.getElementById('compra-cantidad').value = '';
+  toast('Producto añadido ✓');
+}
+
+async function toggleCompra(id, done) {
+  await supabase_client.from('compra').update({ done: !done }).eq('id', id);
+}
+
+async function deleteCompra(id) {
+  await supabase_client.from('compra').delete().eq('id', id);
+}
+
+async function clearCompraHecha() {
+  await supabase_client.from('compra').delete().eq('done', true);
+  toast('Marcados eliminados ✓');
+}
+
+async function clearCompraAll() {
+  if (confirm('¿Vaciar toda la lista?')) {
+    await supabase_client.from('compra').delete().neq('id', 0);
+    toast('Lista vaciada ✓');
+  }
+}
+
+async function renderCompra() {
+  const lista = document.getElementById('lista-compra');
+  const { data: compra } = await supabase_client.from('compra').select('*').order('id');
+  if (!compra || !compra.length) { lista.innerHTML = '<div class="empty">Lista vacía</div>'; return; }
+  lista.innerHTML = compra.map(c => `
+    <div class="shop-item">
+      <input type="checkbox" ${c.done?'checked':''} onchange="toggleCompra(${c.id}, ${c.done})">
+      <span class="shop-label ${c.done?'done':''}">${c.nombre}</span>
+      <span class="shop-qty">${c.cantidad}</span>
+      ${currentRole==='manager' ? `<button class="del-btn" onclick="deleteCompra(${c.id})">✕</button>` : ''}
+    </div>`).join('');
+}
+
+// ============================================================
+//  FICHAJE
+// ============================================================
+async function addWorker() {
+  const nombre = document.getElementById('worker-nombre').value.trim();
+  const tarifa = parseFloat(document.getElementById('worker-tarifa').value) || 10;
+  if (!nombre) return;
+  await supabase_client.from('workers').insert({ nombre, tarifa, activo: false, entrada: null });
+  document.getElementById('worker-nombre').value = '';
+  document.getElementById('worker-tarifa').value = '';
+  toast('Trabajador añadido ✓');
+}
+
+async function deleteWorker(id) {
+  if (!confirm('¿Eliminar trabajador y sus fichajes?')) return;
+  await supabase_client.from('fichajes').delete().eq('worker_id', id);
+  await supabase_client.from('workers').delete().eq('id', id);
+  toast('Trabajador eliminado');
+}
+
+async function fichar(id) {
+  const { data: w } = await supabase_client.from('workers').select('*').eq('id', id).single();
+  if (!w) return;
+  const ahora = new Date().toISOString();
+  if (!w.activo) {
+    await supabase_client.from('workers').update({ activo: true, entrada: ahora }).eq('id', id);
+    toast(`${w.nombre} — entrada registrada ✓`);
+  } else {
+    const horas = Math.round((new Date() - new Date(w.entrada)) / 36000) / 100;
+    await supabase_client.from('fichajes').insert({ worker_id: id, entrada: w.entrada, salida: ahora, horas });
+    await supabase_client.from('workers').update({ activo: false, entrada: null }).eq('id', id);
+    toast(`${w.nombre} — salida: ${horas}h ✓`);
+  }
+}
+
+async function ficharYo() {
+  if (!currentWorker) return;
+  await fichar(currentWorker.id);
+  // Refresh worker data
+  const { data } = await supabase_client.from('workers').select('*').eq('id', currentWorker.id).single();
+  currentWorker = data;
+  updateMiFichaje();
+}
+
+async function updateMiFichaje() {
+  if (!currentWorker) return;
+  const { data: w } = await supabase_client.from('workers').select('*').eq('id', currentWorker.id).single();
+  currentWorker = w;
+  const btn = document.getElementById('btn-fichar-yo');
+  const estado = document.getElementById('mi-estado');
+  if (w.activo) {
+    const desde = new Date(w.entrada);
+    const diff = Math.round((new Date() - desde) / 60000);
+    estado.innerHTML = `🟢 <strong>Turno activo</strong> — lleva ${diff} min (desde ${fmtHora(w.entrada)})`;
+    btn.textContent = '⏹ Marcar salida';
+    btn.className = 'btn btn-full';
+    btn.style.background = '#e74c3c'; btn.style.color = '#fff';
+  } else {
+    estado.textContent = 'Sin turno activo';
+    btn.textContent = '▶ Marcar entrada';
+    btn.className = 'btn btn-green btn-full';
+    btn.style.background = '';
+  }
+}
+
+async function renderWorkers() {
+  const lista = document.getElementById('lista-workers');
+  const { data: workers } = await supabase_client.from('workers').select('*').order('nombre');
+  const { data: fichajes } = await supabase_client.from('fichajes').select('*');
+
+  if (currentRole === 'worker') {
+    updateMiFichaje();
+    lista.innerHTML = '';
+    return;
+  }
+
+  if (!workers || !workers.length) { lista.innerHTML = '<div class="empty">No hay trabajadores</div>'; return; }
+
+  lista.innerHTML = workers.map(w => {
+    const wFichajes = (fichajes || []).filter(f => f.worker_id === w.id);
+    const totalH = wFichajes.reduce((s,f) => s + f.horas, 0);
+    const deuda = (totalH * w.tarifa).toFixed(2);
+    const ultimos = wFichajes.slice(-3).reverse();
+
+    return `
+    <div class="worker-card">
+      <div class="worker-header">
+        <div>
+          <div class="worker-name-big">${w.nombre}</div>
+          <div style="font-size:0.78rem;color:var(--ink2)">${w.tarifa}€/h · ${wFichajes.length} turnos</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="pill ${w.activo?'pill-in':'pill-out'}">${w.activo?'🟢 Trabajando':'⚪ Libre'}</span>
+          <button class="del-btn" onclick="deleteWorker(${w.id})">✕</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-sm ${w.activo?'':'btn-green'}" onclick="fichar(${w.id})"
+          style="${w.activo?'background:#e74c3c;color:#fff':''}">${w.activo?'⏹ Salida':'▶ Entrada'}</button>
+        <div class="hours-total" style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;color:var(--accent)">${totalH.toFixed(1)}h</div>
+        <div style="font-size:0.88rem;color:var(--ink2)">→ <strong>${deuda}€</strong></div>
+      </div>
+      ${w.activo ? `<div style="margin-top:8px;font-size:0.8rem;color:var(--green)">🕐 Entrada: ${fmtHora(w.entrada)}</div>` : ''}
+      ${ultimos.length ? `
+        <div class="fichaje-log">
+          <div class="section-label">Últimos turnos</div>
+          ${ultimos.map(f => `<div class="log-row">📅 ${fmtFecha(f.entrada)} &nbsp; 🟢 <span class="log-time">${fmtHora(f.entrada)}</span> → 🔴 <span class="log-time">${fmtHora(f.salida)}</span> &nbsp; <span class="log-time">${f.horas}h</span></div>`).join('')}
+        </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+//  SUELDOS
+// ============================================================
+async function resetFichajes() {
+  if (!confirm('¿Reiniciar todos los fichajes? Hazlo solo después de pagar.')) return;
+  await supabase_client.from('fichajes').delete().neq('id', 0);
+  await supabase_client.from('workers').update({ activo: false, entrada: null }).neq('id', 0);
+  toast('Fichajes reiniciados ✓');
+  renderSueldos();
+}
+
+async function renderSueldos() {
+  const div = document.getElementById('resumen-sueldos');
+  const { data: workers } = await supabase_client.from('workers').select('*').order('nombre');
+  const { data: fichajes } = await supabase_client.from('fichajes').select('*');
+
+  if (!workers || !workers.length) { div.innerHTML = '<div class="empty">Sin trabajadores</div>'; return; }
+
+  let total = 0;
+  div.innerHTML = workers.map(w => {
+    const wFichajes = (fichajes || []).filter(f => f.worker_id === w.id);
+    const h = wFichajes.reduce((s,f) => s + f.horas, 0);
+    const deuda = h * w.tarifa;
+    total += deuda;
+    return `
+    <div class="salary-card">
+      <div>
+        <div class="salary-name">${w.nombre}</div>
+        <div class="salary-detail">${h.toFixed(2)} h × ${w.tarifa}€/h</div>
+        <div class="salary-detail">${wFichajes.length} turnos registrados</div>
+      </div>
+      <div class="salary-amount">${deuda.toFixed(2)}€</div>
+    </div>`;
+  }).join('') + `
+  <div class="total-bar">
+    <div>
+      <div class="total-label">Total a pagar</div>
+    </div>
+    <div class="total-amount">${total.toFixed(2)}€</div>
+  </div>`;
+}
+
+// ============================================================
+//  WHATSAPP
+// ============================================================
+async function compartirWhatsApp() {
+  const hoy = new Date().toLocaleDateString('es-ES');
+  let msg = `📋 *RESUMEN LOCAL — ${hoy}*\n\n`;
+
+  const { data: tareas } = await supabase_client.from('tareas').select('*').order('id');
+  const pendientes = (tareas || []).filter(t => !t.done);
+  if (pendientes.length) {
+    msg += `✅ *TAREAS PENDIENTES*\n`;
+    ['mañana','tarde','noche','todos'].forEach(turno => {
+      const ts = pendientes.filter(t => t.turno === turno);
+      const emo = { mañana:'🌅', tarde:'🌆', noche:'🌙', todos:'📌' };
+      if (ts.length) { msg += `\n${emo[turno]} _${turno.toUpperCase()}_\n`; ts.forEach(t => msg += `• ${t.texto}\n`); }
+    });
+    msg += '\n';
+  }
+
+  const { data: compra } = await supabase_client.from('compra').select('*').order('id');
+  const compraP = (compra || []).filter(c => !c.done);
+  const compraH = (compra || []).filter(c => c.done);
+  if (compraP.length) {
+    msg += `🛒 *LISTA DE LA COMPRA*\n`;
+    compraP.forEach(c => msg += `• ${c.nombre} (${c.cantidad})\n`);
+  }
+  if (compraH.length) {
+    msg += `\n✅ _Ya comprado:_\n`;
+    compraH.forEach(c => msg += `~${c.nombre}~\n`);
+  }
+  msg += '\n';
+
+  const { data: workers } = await supabase_client.from('workers').select('*').order('nombre');
+  const { data: fichajes } = await supabase_client.from('fichajes').select('*');
+  if (workers && workers.length) {
+    msg += `💶 *SUELDOS*\n`;
+    let total = 0;
+    workers.forEach(w => {
+      const h = (fichajes || []).filter(f => f.worker_id === w.id).reduce((s,f) => s+f.horas, 0);
+      const d = h * w.tarifa;
+      total += d;
+      msg += `• ${w.nombre}: ${h.toFixed(1)}h → *${d.toFixed(2)}€*\n`;
+    });
+    msg += `\n💰 *TOTAL: ${total.toFixed(2)}€*`;
+  }
+
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+
+// ============================================================
+//  UTILS
+// ============================================================
+function fmtHora(iso) { return new Date(iso).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' }); }
+function fmtFecha(iso) { return new Date(iso).toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit' }); }
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ============================================================
+//  AUTO-LOAD saved credentials
+// ============================================================
+window.addEventListener('load', () => {
+  const url = localStorage.getItem('sb_url');
+  const key = localStorage.getItem('sb_key');
+  const pass = localStorage.getItem('mgr_pass');
+  if (url && key && pass) {
+    document.getElementById('sb-url').value = url;
+    document.getElementById('sb-key').value = key;
+    document.getElementById('manager-pass').value = pass;
+  }
+});
+</script>
+</body>
+</html>
