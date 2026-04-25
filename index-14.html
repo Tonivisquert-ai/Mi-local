@@ -1,0 +1,1985 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Local</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg: #f5f0e8;
+  --surface: #fdfaf4;
+  --surface2: #ede8dc;
+  --border: #d9d2c3;
+  --ink: #2a2118;
+  --ink2: #7a6f5e;
+  --accent: #2d6a4f;
+  --accent-light: #e8f4ed;
+  --green: #2d6a4f;
+  --green-light: #e8f4ed;
+  --yellow: #c9a84c;
+  --yellow-light: #fdf6e3;
+  --blue: #1a5fa8;
+  --blue-light: #e8f0fb;
+  --sand: #d4b896;
+  --coral: #e07b54;
+  --radius: 14px;
+  --shadow: 0 2px 16px rgba(42,33,24,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+/* Subtle wave texture background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c9a84c' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+body > * { position: relative; z-index: 1; }
+
+/* SETUP */
+#setup-screen { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; background:linear-gradient(160deg, #1a2e1e 0%, #2a1f0e 100%); }
+.setup-logo { font-family:'Syne',sans-serif; font-size:2.4rem; font-weight:800; color:#fff; margin-bottom:6px; letter-spacing:-1px; }
+.setup-sub { color:#888; font-size:0.9rem; margin-bottom:32px; text-align:center; }
+.setup-card { background:#222; border:1px solid #333; border-radius:16px; padding:24px; width:100%; max-width:420px; margin-bottom:12px; }
+.setup-label { font-size:0.75rem; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+.setup-input { width:100%; background:#1a1a1a; border:1px solid #333; color:#fff; padding:12px 14px; border-radius:8px; font-family:'Instrument Sans',sans-serif; font-size:0.9rem; margin-bottom:14px; outline:none; }
+.setup-input:focus { border-color:var(--accent); }
+.setup-btn { width:100%; background:var(--accent); color:#fff; border:none; border-radius:8px; padding:14px; font-family:'DM Sans',sans-serif; font-weight:600; font-size:1rem; cursor:pointer; letter-spacing:0.5px; }
+.setup-btn:hover { background:#1e4d38; }
+.setup-note { color:#555; font-size:0.8rem; text-align:center; line-height:1.6; }
+.setup-note a { color:var(--accent); }
+
+/* ROLE */
+#role-screen { display:none; min-height:100vh; background:linear-gradient(160deg, #1a2e1e 0%, #2a1f0e 100%); flex-direction:column; align-items:center; justify-content:center; padding:24px; }
+.role-title { font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; color:#fff; margin-bottom:6px; text-align:center; }
+.role-sub { color:#777; font-size:0.88rem; margin-bottom:28px; text-align:center; }
+.role-cards { display:flex; flex-direction:column; gap:12px; width:100%; max-width:360px; }
+.role-card { background:rgba(255,255,255,0.06); border:1px solid rgba(201,168,76,0.3); border-radius:14px; padding:20px; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:16px; backdrop-filter:blur(10px); }
+.role-card:hover { border-color:var(--yellow); background:rgba(201,168,76,0.1); transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.3); }
+.role-icon { font-size:2rem; width:52px; height:52px; display:flex; align-items:center; justify-content:center; background:#2a2a2a; border-radius:12px; flex-shrink:0; }
+.role-name { font-family:'Syne',sans-serif; font-weight:700; color:#fff; font-size:1rem; }
+.role-desc { color:#666; font-size:0.8rem; margin-top:2px; }
+
+/* WORKER LOGIN */
+#worker-login { display:none; min-height:100vh; background:linear-gradient(160deg, #1a2e1e 0%, #2a1f0e 100%); flex-direction:column; align-items:center; justify-content:center; padding:24px; }
+
+/* APP */
+#app { display:none; }
+.topbar { background:linear-gradient(135deg, #1a2e1e 0%, #2d3e2a 100%); padding:14px 16px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+.topbar-title { font-size:1.1rem; color:#fff; letter-spacing:-0.5px; }
+.topbar-role { font-size:0.75rem; background:var(--yellow); color:#2a1f0e; padding:3px 10px; border-radius:50px; font-weight:600; }
+.tabs { display:flex; background:var(--surface); border-bottom:2px solid var(--border); overflow-x:auto; padding:0 8px; gap:2px; }
+.tab-btn { background:none; border:none; border-bottom:2px solid transparent; padding:14px 10px 12px; font-family:'Instrument Sans',sans-serif; font-size:0.8rem; font-weight:600; color:var(--ink2); cursor:pointer; white-space:nowrap; transition:all 0.15s; }
+.tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:700; }
+.content { padding:16px; max-width:600px; margin:0 auto; padding-bottom:80px; }
+
+/* CARDS */
+.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:14px; box-shadow:var(--shadow); }
+.card-title { font-family:'Playfair Display',serif; font-weight:700; font-size:1rem; margin-bottom:14px; color:var(--ink); display:flex; align-items:center; gap:7px; }
+
+/* INPUTS */
+input[type="text"], input[type="time"], input[type="number"], input[type="password"], select, textarea {
+  background:var(--surface2); border:1px solid var(--border); color:var(--ink); padding:10px 12px; border-radius:8px;
+  font-family:'Instrument Sans',sans-serif; font-size:0.9rem; width:100%; outline:none; transition:border-color 0.2s;
+}
+input:focus, select:focus { border-color:var(--accent); }
+.row { display:flex; gap:8px; margin-bottom:10px; align-items:center; }
+.row input, .row select { flex:1; }
+
+/* BUTTONS */
+.btn { padding:10px 16px; border-radius:8px; border:none; cursor:pointer; font-family:'Instrument Sans',sans-serif; font-weight:600; font-size:0.88rem; transition:all 0.15s; white-space:nowrap; }
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover { background:#1e4d38; }
+.btn-green { background:var(--green); color:#fff; }
+.btn-green:hover { background:#145c38; }
+.btn-blue { background:var(--blue); color:#fff; }
+.btn-blue:hover { background:#164d8a; }
+.btn-ghost { background:transparent; border:1px solid var(--border); color:var(--ink2); }
+.btn-ghost:hover { border-color:var(--accent); color:var(--accent); }
+.btn-full { width:100%; margin-top:8px; }
+.btn-sm { padding:6px 12px; font-size:0.8rem; }
+.del-btn { background:none; border:none; color:#ccc; cursor:pointer; font-size:0.85rem; padding:3px 7px; border-radius:4px; flex-shrink:0; transition:color 0.15s; }
+.del-btn:hover { color:var(--accent); }
+
+/* TASK ITEMS */
+.task-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
+.task-item:last-child { border-bottom:none; }
+.task-item input[type="checkbox"] { width:18px; height:18px; accent-color:var(--accent); cursor:pointer; flex-shrink:0; }
+.task-label { flex:1; font-size:0.9rem; }
+.task-label.done { text-decoration:line-through; color:var(--ink2); }
+.badge { font-size:0.7rem; padding:2px 8px; border-radius:50px; font-weight:700; flex-shrink:0; }
+.badge-mañana { background:#dbeafe; color:#1d4ed8; }
+.badge-tarde { background:#ede9fe; color:#6d28d9; }
+.badge-noche { background:#1e293b; color:#94a3b8; }
+.badge-todos { background:var(--accent-light); color:var(--accent); }
+.badge-cierre { background:#1e293b; color:#f59e0b; }
+
+/* SHOP ITEMS */
+.shop-item { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); }
+.shop-item:last-child { border-bottom:none; }
+.shop-item input[type="checkbox"] { width:18px; height:18px; accent-color:var(--green); cursor:pointer; flex-shrink:0; }
+.shop-label { flex:1; font-size:0.9rem; }
+.shop-label.done { text-decoration:line-through; color:var(--ink2); }
+.shop-qty { font-weight:700; font-size:0.85rem; color:var(--green); min-width:36px; text-align:right; }
+
+/* WORKERS */
+.worker-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px; margin-bottom:12px; box-shadow:var(--shadow); }
+.worker-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.worker-name-big { font-family:'Syne',sans-serif; font-weight:700; font-size:1rem; }
+.pill { font-size:0.72rem; padding:3px 10px; border-radius:50px; font-weight:700; }
+.pill-in { background:var(--green-light); color:var(--green); }
+.pill-out { background:var(--surface2); color:var(--ink2); border:1px solid var(--border); }
+.hours-badge { font-family:'Syne',sans-serif; font-size:1.4rem; font-weight:800; color:var(--accent); }
+.fichaje-log { margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+.log-row { display:flex; gap:6px; font-size:0.78rem; color:var(--ink2); padding:3px 0; flex-wrap:wrap; }
+.log-time { color:var(--ink); font-weight:600; }
+
+/* SALARY */
+.salary-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; box-shadow:var(--shadow); }
+.salary-name { font-weight:600; font-size:0.95rem; }
+.salary-detail { font-size:0.78rem; color:var(--ink2); margin-top:2px; }
+.salary-amount { font-family:'Playfair Display',serif; font-size:1.6rem; font-weight:700; color:var(--accent); }
+.total-bar { background:linear-gradient(135deg,#1a2e1e,#2d3e2a); color:#fff; border-radius:var(--radius); padding:16px 20px; display:flex; justify-content:space-between; align-items:center; margin-top:6px; }
+.total-label { font-size:0.8rem; color:#888; text-transform:uppercase; letter-spacing:1px; }
+.total-amount { font-family:'Playfair Display',serif; font-size:2rem; font-weight:700; color:var(--yellow); }
+
+/* STOCK */
+.stock-categoria { font-family:'Syne',sans-serif; font-size:0.8rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:var(--ink2); padding:10px 0 6px; margin-top:6px; border-bottom:2px solid var(--border); margin-bottom:8px; }
+.stock-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+.stock-item:last-child { border-bottom:none; }
+.stock-nombre { flex:1; font-size:0.9rem; }
+.stock-minimo { font-size:0.75rem; color:var(--ink2); white-space:nowrap; }
+.stock-input-wrap { display:flex; align-items:center; gap:6px; }
+.stock-num { width:60px; text-align:center; padding:6px 8px; font-weight:700; }
+.stock-badge-ok { background:var(--green-light); color:var(--green); font-size:0.7rem; padding:2px 8px; border-radius:50px; font-weight:700; white-space:nowrap; }
+.stock-badge-low { background:#fee2e2; color:#dc2626; font-size:0.7rem; padding:2px 8px; border-radius:50px; font-weight:700; white-space:nowrap; }
+.stock-badge-pending { background:var(--surface2); color:var(--ink2); font-size:0.7rem; padding:2px 8px; border-radius:50px; font-weight:700; white-space:nowrap; }
+.pedido-item { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:0.9rem; }
+.pedido-item:last-child { border-bottom:none; }
+.pedido-cant { font-weight:700; color:var(--accent); }
+
+/* TOAST */
+.toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff; padding:10px 20px; border-radius:50px; font-size:0.85rem; font-weight:600; opacity:0; transition:all 0.3s; z-index:999; white-space:nowrap; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* WHATSAPP */
+.wa-bar { position:fixed; bottom:16px; right:16px; }
+.wa-btn { background:#25D366; color:#fff; border:none; border-radius:50px; padding:13px 22px; font-family:'Syne',sans-serif; font-weight:700; font-size:0.88rem; cursor:pointer; box-shadow:0 4px 20px rgba(37,211,102,0.45); display:flex; align-items:center; gap:8px; }
+
+.empty { color:var(--ink2); font-size:0.85rem; text-align:center; padding:18px 0; }
+.section { display:none; }
+.section.active { display:block; }
+.turno-filter { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+.turno-btn { background:var(--surface2); border:1px solid var(--border); color:var(--ink2); padding:5px 14px; border-radius:50px; font-size:0.8rem; font-weight:600; cursor:pointer; transition:all 0.15s; }
+.turno-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+.section-label { font-size:0.72rem; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; margin-top:4px; }
+.loading { text-align:center; padding:30px; color:var(--ink2); font-size:0.88rem; }
+.spinner { display:inline-block; width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.7s linear infinite; margin-right:8px; vertical-align:middle; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* FICHAJE EDIT */
+.fichaje-edit { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:12px; margin-top:10px; }
+.fichaje-edit-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
+.fichaje-edit-row label { font-size:0.75rem; font-weight:600; color:var(--ink2); min-width:60px; }
+.fichaje-edit input[type="datetime-local"] { flex:1; padding:7px 10px; font-size:0.82rem; }
+
+/* RESERVAS */
+.reserva-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+  border-left: 4px solid var(--accent);
+}
+.reserva-card.confirmada { border-left-color: var(--green); }
+.reserva-card.cancelada { border-left-color: #dc2626; opacity: 0.6; }
+.reserva-nombre { font-family:'Playfair Display',serif; font-size:1rem; font-weight:700; }
+.reserva-info { font-size:0.82rem; color:var(--ink2); margin-top:4px; display:flex; gap:10px; flex-wrap:wrap; }
+.reserva-badge { font-size:0.7rem; padding:2px 8px; border-radius:50px; font-weight:700; }
+.badge-pendiente { background:#fef3c7; color:#d97706; }
+.badge-confirmada { background:var(--green-light); color:var(--green); }
+.badge-cancelada { background:#fee2e2; color:#dc2626; }
+
+.alert-banner { background:#fee2e2; border:1px solid #fca5a5; border-radius:10px; padding:12px 16px; margin-bottom:14px; font-size:0.88rem; color:#dc2626; font-weight:600; display:flex; align-items:center; gap:8px; }
+
+/* TURNO BANNER */
+.turno-banner { border-radius:14px; padding:16px 18px; margin-bottom:16px; display:flex; align-items:center; gap:14px; }
+.turno-banner-manana { background:linear-gradient(135deg,#dbeafe,#bfdbfe); border:1px solid #93c5fd; }
+.turno-banner-tarde { background:linear-gradient(135deg,#ede9fe,#ddd6fe); border:1px solid #c4b5fd; }
+.turno-banner-noche { background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid #334155; }
+.turno-banner-cierre { background:linear-gradient(135deg,#1e1b0e,#2a2410); border:1px solid #78716c; }
+.turno-banner-emoji { font-size:2rem; }
+.turno-banner-info { flex:1; }
+.turno-banner-nombre { font-family:'Syne',sans-serif; font-weight:800; font-size:1rem; }
+.turno-banner-manana .turno-banner-nombre { color:#1d4ed8; }
+.turno-banner-tarde .turno-banner-nombre { color:#6d28d9; }
+.turno-banner-noche .turno-banner-nombre, .turno-banner-cierre .turno-banner-nombre { color:#f1f5f9; }
+.turno-banner-sub { font-size:0.78rem; margin-top:2px; }
+.turno-banner-manana .turno-banner-sub { color:#3b82f6; }
+.turno-banner-tarde .turno-banner-sub { color:#8b5cf6; }
+.turno-banner-noche .turno-banner-sub, .turno-banner-cierre .turno-banner-sub { color:#94a3b8; }
+
+/* TASK TIMER */
+.task-timer { font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:50px; white-space:nowrap; flex-shrink:0; }
+.task-timer-pending { background:var(--surface2); color:var(--ink2); border:1px solid var(--border); }
+.task-timer-now { background:#fef3c7; color:#d97706; border:1px solid #fcd34d; animation: pulse-badge 1.5s infinite; }
+.task-timer-late { background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; }
+.task-timer-done { background:var(--green-light); color:var(--green); }
+@keyframes pulse-badge { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+/* NOTIF */
+.notif-bar { position:fixed; top:0; left:0; right:0; z-index:200; background:var(--accent); color:#fff; padding:14px 16px; font-family:'Syne',sans-serif; font-weight:700; font-size:0.95rem; display:flex; align-items:center; justify-content:space-between; transform:translateY(-100%); transition:transform 0.4s; }
+.notif-bar.show { transform:translateY(0); }
+
+</style>
+</head>
+<body>
+
+<div id="setup-screen">
+  <div style="text-align:center;margin-bottom:8px">
+    <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:3rem;color:#c9a84c;letter-spacing:1px">Bonita</div>
+    <div style="font-size:0.75rem;color:#888;letter-spacing:3px;text-transform:uppercase;margin-top:-4px">Beach Club · Cullera</div>
+  </div>
+  <p class="setup-sub">Panel de gestión</p>
+  <div class="setup-card">
+    <div class="setup-label">Supabase URL</div>
+    <input class="setup-input" id="sb-url" placeholder="https://xxxx.supabase.co" autocomplete="off">
+    <div class="setup-label">Supabase Anon Key</div>
+    <input class="setup-input" id="sb-key" placeholder="eyJhbGciOi..." type="password" autocomplete="off">
+    <div class="setup-label">Contraseña de manager</div>
+    <input class="setup-input" id="manager-pass" placeholder="Ej: 1234local" type="password">
+    <button class="setup-btn" onclick="conectar()">Conectar y empezar →</button>
+  </div>
+  <p class="setup-note" id="setup-error" style="color:#e05c2a;margin-bottom:8px;display:none"></p>
+</div>
+
+<!-- LOCAL SELECTOR -->
+<div id="local-screen" style="display:none;min-height:100vh;background:linear-gradient(160deg,#1a150e,#2a2010);flex-direction:column;align-items:center;justify-content:center;padding:24px">
+  <div style="text-align:center;margin-bottom:32px">
+    <div style="font-size:0.7rem;color:#888;letter-spacing:4px;text-transform:uppercase;margin-bottom:12px">GRUPO</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:3rem;font-weight:700;color:#c9a030;letter-spacing:2px;line-height:1">COLMENA</div>
+    <div style="font-size:0.65rem;color:#666;letter-spacing:3px;text-transform:uppercase;margin-top:6px">Panel de gestión</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px;width:100%;max-width:340px">
+    <div onclick="selectLocal('bonita')" style="background:rgba(45,106,79,0.15);border:1px solid rgba(201,168,76,0.4);border-radius:16px;padding:20px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:16px" onmouseover="this.style.background='rgba(45,106,79,0.25)'" onmouseout="this.style.background='rgba(45,106,79,0.15)'">
+      <div style="font-size:2.2rem;width:52px;height:52px;display:flex;align-items:center;justify-content:center;background:rgba(45,106,79,0.2);border-radius:12px;flex-shrink:0">🌴</div>
+      <div>
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:1.3rem;color:#c9a84c">Bonita</div>
+        <div style="font-size:0.7rem;color:#888;letter-spacing:1px;text-transform:uppercase;margin-top:2px">Beach Club · Cullera</div>
+      </div>
+    </div>
+
+    <div onclick="selectLocal('casino')" style="background:rgba(139,58,26,0.15);border:1px solid rgba(201,160,48,0.4);border-radius:16px;padding:20px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:16px" onmouseover="this.style.background='rgba(139,58,26,0.25)'" onmouseout="this.style.background='rgba(139,58,26,0.15)'">
+      <div style="font-size:2.2rem;width:52px;height:52px;display:flex;align-items:center;justify-content:center;background:rgba(139,58,26,0.2);border-radius:12px;flex-shrink:0">🏛️</div>
+      <div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:#c9a030;letter-spacing:1px">L'AGRICULTURA</div>
+        <div style="font-size:0.7rem;color:#888;letter-spacing:1px;text-transform:uppercase;margin-top:2px">Casino · Sueca</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:32px;color:#444;font-size:0.72rem;letter-spacing:2px;text-transform:uppercase">🐝 Grupo Colmena</div>
+</div>
+
+<div id="role-screen">
+  <div style="text-align:center;margin-bottom:20px">
+    <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:2.2rem;color:#c9a84c">Bonita</div>
+    <div style="font-size:0.65rem;color:#888;letter-spacing:3px;text-transform:uppercase">Beach Club · Cullera</div>
+  </div>
+  <div class="role-title" style="font-size:1.3rem">¿Quién eres?</div>
+  <p class="role-sub">Elige tu rol para continuar</p>
+  <div class="role-cards">
+    <div class="role-card" onclick="setRole('manager')">
+      <div class="role-icon">👔</div>
+      <div><div class="role-name">Manager</div><div class="role-desc">Gestionar tareas, stock, fichajes y sueldos</div></div>
+    </div>
+    <div class="role-card" onclick="setRole('worker')">
+      <div class="role-icon">👷</div>
+      <div><div class="role-name">Trabajador</div><div class="role-desc">Fichar entrada/salida, tareas y stock</div></div>
+    </div>
+  </div>
+  <div style="margin-top:28px;text-align:center;color:#444;font-size:0.8rem;letter-spacing:1px">🌴 Playa Escollera · Cullera</div>
+</div>
+
+<div id="worker-login">
+  <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:2rem;color:#c9a84c;margin-bottom:4px">¿Cómo te llamas?</div>
+  <p class="setup-sub">Elige tu nombre para fichar</p>
+  <div class="setup-card" style="max-width:340px">
+    <select class="setup-input" id="worker-select" style="background:#1a1a1a;color:#fff;border-color:#333">
+      <option value="">Selecciona tu nombre...</option>
+    </select>
+    <button class="setup-btn" onclick="workerLogin()" style="margin-top:10px">Entrar →</button>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-title" style="display:flex;align-items:center;gap:10px">
+      <span id="topbar-local-name" style="font-family:'Playfair Display',serif;font-style:italic;font-size:1.3rem;color:#c9a84c;letter-spacing:0.5px">Bonita</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="topbar-role" id="role-badge">Manager</span>
+      <button class="btn btn-ghost btn-sm" onclick="cerrarSesion()" style="color:#aaa;border-color:#444;padding:5px 10px">Salir</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('tareas')">✅ Tareas</button>
+    <button class="tab-btn" onclick="showTab('compra')">🛒 Compra</button>
+    <button class="tab-btn" onclick="showTab('stock')">📦 Stock</button>
+    <button class="tab-btn" onclick="showTab('fichaje')">🕐 Fichaje</button>
+    <button class="tab-btn manager-only" onclick="showTab('sueldos')">💶 Sueldos</button>
+    <button class="tab-btn" onclick="showTab('caja')">🔒 Caja</button>
+    <button class="tab-btn" onclick="showTab('reservas')">📅 Reservas</button>
+  </div>
+
+  <div class="content">
+
+    <!-- TAREAS -->
+    <div id="sec-tareas" class="section active">
+      <div id="turno-banner"></div>
+      <div class="card manager-only">
+        <div class="card-title">➕ Nueva tarea</div>
+        <div class="row">
+          <input type="text" id="tarea-texto" placeholder="Descripción...">
+          <select id="tarea-turno" style="max-width:110px">
+            <option value="mañana">🌅 Mañana</option>
+            <option value="tarde">🌆 Tarde</option>
+            <option value="noche">🌙 Noche</option>
+            <option value="cierre">🔒 Cierre</option>
+            <option value="todos">📌 Todos</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="addTarea()">Añadir tarea</button>
+      </div>
+      <div class="turno-filter">
+        <button class="turno-btn active" onclick="filterTareas('todos',this)">Todos</button>
+        <button class="turno-btn" onclick="filterTareas('mañana',this)">🌅 Mañana</button>
+        <button class="turno-btn" onclick="filterTareas('tarde',this)">🌆 Tarde</button>
+        <button class="turno-btn" onclick="filterTareas('noche',this)">🌙 Noche</button>
+        <button class="turno-btn" onclick="filterTareas('cierre',this)">🔒 Cierre</button>
+      </div>
+      <div class="card">
+        <div id="lista-tareas"><div class="loading"><span class="spinner"></span>Cargando...</div></div>
+      </div>
+    </div>
+
+    <!-- COMPRA -->
+    <div id="sec-compra" class="section">
+      <div class="card manager-only">
+        <div class="card-title">➕ Añadir producto</div>
+        <div class="row">
+          <input type="text" id="compra-nombre" placeholder="Producto...">
+          <input type="text" id="compra-cantidad" placeholder="Cantidad" style="max-width:90px">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="addCompra()">Añadir</button>
+      </div>
+      <div class="card">
+        <div id="lista-compra"><div class="loading"><span class="spinner"></span>Cargando...</div></div>
+        <div class="manager-only" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="clearCompraHecha()">Limpiar marcados</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearCompraAll()">Vaciar lista</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STOCK -->
+    <div id="sec-stock" class="section">
+      <div id="stock-alerta" style="display:none" class="alert-banner">⚠️ <span id="stock-alerta-txt"></span></div>
+
+      <div class="card" style="border-color:var(--blue);border-width:2px">
+        <div class="card-title">📦 Control de stock</div>
+        <p style="font-size:0.82rem;color:var(--ink2);margin-bottom:12px">Pon cuánto queda de cada producto. La app calculará qué hay que pedir.</p>
+        <div id="lista-stock"><div class="loading"><span class="spinner"></span>Cargando...</div></div>
+        <button class="btn btn-blue btn-full" onclick="guardarStock()" style="margin-top:14px">💾 Guardar stock</button>
+        <button class="btn btn-full" onclick="enviarStockWhatsApp()" style="margin-top:8px;background:#25D366;color:#fff">📲 Enviar stock al manager</button>
+      </div>
+
+      <div class="card manager-only" id="pedido-card" style="display:none">
+        <div class="card-title">🛒 Pedido generado</div>
+        <p style="font-size:0.82rem;color:var(--ink2);margin-bottom:12px">Productos por debajo del mínimo:</p>
+        <div id="lista-pedido"></div>
+        <button class="btn btn-primary btn-full" onclick="enviarPedidoWA()" style="margin-top:12px">📲 Enviar pedido por WhatsApp</button>
+      </div>
+
+      <div class="card manager-only">
+        <div class="card-title">➕ Añadir producto al catálogo</div>
+        <div class="row">
+          <input type="text" id="stock-nombre" placeholder="Nombre del producto...">
+          <input type="number" id="stock-minimo" placeholder="Mínimo" style="max-width:80px">
+        </div>
+        <div class="row">
+          <select id="stock-cat">
+            <option value="Barra">Barra</option>
+            <option value="Cerveza">Cerveza</option>
+            <option value="Refrescos">Refrescos</option>
+            <option value="Frutas">Frutas</option>
+            <option value="Cafetería">Cafetería</option>
+            <option value="Almacén">Almacén</option>
+            <option value="Limpieza">Limpieza</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="addStockProducto()">Añadir producto</button>
+      </div>
+    </div>
+
+    <!-- FICHAJE -->
+    <div id="sec-fichaje" class="section">
+      <div class="card manager-only">
+        <div class="card-title">👤 Añadir trabajador</div>
+        <div class="row">
+          <input type="text" id="worker-nombre" placeholder="Nombre...">
+          <input type="number" id="worker-tarifa" placeholder="€/h" style="max-width:80px" step="0.5">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="addWorker()">Añadir</button>
+      </div>
+      <div id="mi-fichaje" style="display:none">
+        <div class="card" style="border-color:var(--accent);border-width:2px">
+          <div class="card-title" id="mi-nombre-title">Mi fichaje</div>
+          <div id="mi-estado" style="margin-bottom:12px;font-size:0.9rem;color:var(--ink2)">Sin turno activo</div>
+          <button class="btn btn-full" id="btn-fichar-yo" onclick="ficharYo()">▶ Marcar entrada</button>
+        </div>
+      </div>
+      <div id="lista-workers"><div class="loading"><span class="spinner"></span>Cargando...</div></div>
+    </div>
+
+    <!-- SUELDOS -->
+    <div id="sec-sueldos" class="section">
+      <div id="resumen-sueldos"><div class="loading"><span class="spinner"></span>Cargando...</div></div>
+      <div class="card" style="margin-top:4px">
+        <div class="card-title">🗑️ Reiniciar período</div>
+        <p style="font-size:0.82rem;color:var(--ink2);margin-bottom:10px">Borra los fichajes al pagar para empezar nuevo período.</p>
+        <button class="btn btn-ghost btn-full" onclick="resetFichajes()" style="color:var(--accent);border-color:var(--accent)">Reiniciar fichajes</button>
+      </div>
+    </div>
+
+    <!-- CIERRE DE CAJA -->
+    <div id="sec-caja" class="section">
+      <div class="card" style="border-color:var(--yellow);border-width:2px">
+        <div class="card-title">🔒 Cierre de caja</div>
+        <p style="font-size:0.82rem;color:var(--ink2);margin-bottom:14px">Introduce los totales al cerrar el turno.</p>
+
+        <div class="section-label">💵 Efectivo en caja (total físico)</div>
+        <div class="row" style="margin-bottom:14px">
+          <input type="number" id="cierre-efectivo" placeholder="0.00" step="0.01" min="0" oninput="updateCierrePreview()">
+          <span style="font-size:1.1rem;font-weight:700;color:var(--green)">€</span>
+        </div>
+
+        <div class="section-label">🔄 Fondo de cambio (se deja en caja)</div>
+        <div class="row" style="margin-bottom:14px">
+          <input type="number" id="cierre-cambio" placeholder="0.00" step="0.01" min="0" oninput="updateCierrePreview()">
+          <span style="font-size:1.1rem;font-weight:700;color:var(--ink2)">€</span>
+        </div>
+
+        <div class="section-label">💳 Total tarjeta</div>
+        <div class="row" style="margin-bottom:14px">
+          <input type="number" id="cierre-tarjeta" placeholder="0.00" step="0.01" min="0" oninput="updateCierrePreview()">
+          <span style="font-size:1.1rem;font-weight:700;color:var(--blue)">€</span>
+        </div>
+
+        <div class="section-label">📝 Notas (opcional)</div>
+        <textarea id="cierre-notas" placeholder="Incidencias, comentarios..." style="margin-bottom:14px;min-height:60px"></textarea>
+
+        <div id="cierre-total-preview" style="display:none;background:var(--ink);color:#fff;border-radius:10px;padding:14px;margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="color:#aaa;font-size:0.8rem">TOTAL FACTURACIÓN</span>
+            <span id="cierre-total-num" style="font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:var(--yellow)">0.00€</span>
+          </div>
+          <div style="font-size:0.75rem;color:#888" id="cierre-desglose"></div>
+        </div>
+
+        <button class="btn btn-primary btn-full" onclick="guardarCierre()">💾 Guardar cierre</button>
+      </div>
+
+      <div class="card manager-only" id="historial-cierres-card">
+        <div class="card-title">📊 Historial de cierres</div>
+        <div id="historial-cierres"><div class="loading"><span class="spinner"></span>Cargando...</div></div>
+        <button class="btn btn-ghost btn-sm manager-only" onclick="exportarCierresPDF()" style="margin-top:12px">📄 Exportar a PDF</button>
+      </div>
+    </div>
+
+    <!-- RESERVAS -->
+    <div id="sec-reservas" class="section">
+
+      <!-- Manager: nueva reserva -->
+      <div class="card manager-only">
+        <div class="card-title">➕ Nueva reserva</div>
+        <div class="row">
+          <input type="text" id="res-nombre" placeholder="Nombre del cliente...">
+          <input type="text" id="res-tel" placeholder="Teléfono" style="max-width:130px">
+        </div>
+        <div class="row">
+          <input type="date" id="res-fecha">
+          <input type="time" id="res-hora" style="max-width:110px">
+        </div>
+        <div class="row">
+          <input type="number" id="res-personas" placeholder="Personas" min="1" style="max-width:100px">
+          <select id="res-menu">
+            <option value="">Sin menú especial</option>
+            <option value="Arroz">🍚 Arroz</option>
+            <option value="Paella">🥘 Paella</option>
+            <option value="Fideuà">🍝 Fideuà</option>
+            <option value="Menú grupo">👥 Menú grupo</option>
+            <option value="Cumpleaños">🎂 Cumpleaños</option>
+            <option value="Otro">📝 Otro</option>
+          </select>
+        </div>
+        <textarea id="res-notas" placeholder="Notas adicionales..." style="margin-bottom:10px;min-height:60px"></textarea>
+        <button class="btn btn-primary btn-full" onclick="addReserva()">Guardar reserva</button>
+      </div>
+
+      <!-- Filtro fecha -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+        <button class="turno-btn active" onclick="filterReservas('hoy',this)">Hoy</button>
+        <button class="turno-btn" onclick="filterReservas('manana',this)">Mañana</button>
+        <button class="turno-btn" onclick="filterReservas('semana',this)">Esta semana</button>
+        <button class="turno-btn manager-only" onclick="filterReservas('todas',this)">Todas</button>
+      </div>
+
+      <div id="lista-reservas"><div class="loading"><span class="spinner"></span>Cargando...</div></div>
+
+      <!-- Enlace público -->
+      <div class="card manager-only" style="margin-top:4px;border-color:var(--yellow)">
+        <div class="card-title">🔗 Enlace para clientes</div>
+        <p style="font-size:0.82rem;color:var(--ink2);margin-bottom:10px">Comparte este enlace para que los clientes puedan reservar directamente.</p>
+        <div id="enlace-publico" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:0.78rem;color:var(--ink2);word-break:break-all;margin-bottom:10px"></div>
+        <button class="btn btn-ghost btn-sm" onclick="copiarEnlace()">📋 Copiar enlace</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="wa-bar" id="wa-bar" style="display:none">
+  <button class="wa-btn" onclick="compartirWhatsApp()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+    Enviar resumen
+  </button>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="notif-bar" id="notif-bar">
+  <span id="notif-txt">⏰ Es hora de hacer una tarea</span>
+  <button onclick="cerrarNotif()" style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer">✕</button>
+</div>
+
+<script>
+// ============================================================
+//  DATOS DE STOCK PRECARGADOS
+// ============================================================
+const STOCK_INICIAL = [
+  // BARRA - Licores
+  {nombre:'Befeater', categoria:'Barra', minimo:6},
+  {nombre:'69 broses rosé', categoria:'Barra', minimo:4},
+  {nombre:'Nordes', categoria:'Barra', minimo:4},
+  {nombre:'Seegrams', categoria:'Barra', minimo:7},
+  {nombre:'Puerto de Indias', categoria:'Barra', minimo:6},
+  {nombre:'Hendricks', categoria:'Barra', minimo:2},
+  {nombre:'Bulldog', categoria:'Barra', minimo:2},
+  {nombre:'Brookman\'s', categoria:'Barra', minimo:2},
+  {nombre:'Martini rojo', categoria:'Barra', minimo:3},
+  {nombre:'Martini blanco', categoria:'Barra', minimo:3},
+  {nombre:'Aperol', categoria:'Barra', minimo:4},
+  {nombre:'Pacharan', categoria:'Barra', minimo:1},
+  {nombre:'Vodka blau', categoria:'Barra', minimo:2},
+  {nombre:'Macallan', categoria:'Barra', minimo:2},
+  {nombre:'Cutty', categoria:'Barra', minimo:4},
+  {nombre:'Ballantines', categoria:'Barra', minimo:4},
+  {nombre:'Jb', categoria:'Barra', minimo:2},
+  {nombre:'Negrita', categoria:'Barra', minimo:8},
+  {nombre:'Brugal', categoria:'Barra', minimo:4},
+  {nombre:'Barceló', categoria:'Barra', minimo:3},
+  {nombre:'Vino blanco', categoria:'Barra', minimo:1},
+  {nombre:'Vino tinto', categoria:'Barra', minimo:1},
+  {nombre:'Cava', categoria:'Barra', minimo:3},
+  {nombre:'Jagger', categoria:'Barra', minimo:4},
+  {nombre:'Tequila fresa', categoria:'Barra', minimo:7},
+  {nombre:'Jose cuervo', categoria:'Barra', minimo:4},
+  {nombre:'Cazalla', categoria:'Barra', minimo:4},
+  {nombre:'Licor de arroz', categoria:'Barra', minimo:1},
+  {nombre:'Licor de hierbas', categoria:'Barra', minimo:1},
+  {nombre:'Gin 7', categoria:'Almacén', minimo:1},
+  {nombre:'Admundan', categoria:'Almacén', minimo:1},
+  {nombre:'Ron sin pasar', categoria:'Almacén', minimo:1},
+  {nombre:'Crema de limonchello', categoria:'Almacén', minimo:1},
+  {nombre:'Amareto', categoria:'Almacén', minimo:1},
+  // CERVEZA
+  {nombre:'Barril 5°', categoria:'Cerveza', minimo:7},
+  {nombre:'Mahou 5°', categoria:'Cerveza', minimo:7},
+  {nombre:'Maestra', categoria:'Cerveza', minimo:2},
+  {nombre:'Radler mahou', categoria:'Cerveza', minimo:4},
+  {nombre:'0,0 tostada mahou', categoria:'Cerveza', minimo:3},
+  {nombre:'Alambra verde', categoria:'Cerveza', minimo:5},
+  {nombre:'Alambra roja', categoria:'Cerveza', minimo:2},
+  // REFRESCOS
+  {nombre:'Schweppes Tonica', categoria:'Refrescos', minimo:15},
+  {nombre:'Schweppes Limon', categoria:'Refrescos', minimo:10},
+  {nombre:'Schweppes Naranja', categoria:'Refrescos', minimo:5},
+  {nombre:'Schweppes Berry', categoria:'Refrescos', minimo:3},
+  {nombre:'Seven Up Lima Limon', categoria:'Refrescos', minimo:2},
+  {nombre:'Bitter Kas', categoria:'Refrescos', minimo:1},
+  {nombre:'Trina 275cc', categoria:'Refrescos', minimo:1},
+  {nombre:'Zumos vida 200', categoria:'Refrescos', minimo:1},
+  {nombre:'Tinto 275', categoria:'Refrescos', minimo:4},
+  {nombre:'Casera', categoria:'Refrescos', minimo:1},
+  {nombre:'Pepsi Regular', categoria:'Refrescos', minimo:10},
+  {nombre:'Pepsi Zero', categoria:'Refrescos', minimo:5},
+  {nombre:'Kas Limon', categoria:'Refrescos', minimo:3},
+  {nombre:'Kas Naranja', categoria:'Refrescos', minimo:2},
+  {nombre:'Aquarade Limón', categoria:'Refrescos', minimo:3},
+  {nombre:'Aquarade Naranja', categoria:'Refrescos', minimo:3},
+  {nombre:'Lipton', categoria:'Refrescos', minimo:3},
+  {nombre:'Largason 1250 plaat', categoria:'Refrescos', minimo:15},
+  {nombre:'Pequeña', categoria:'Refrescos', minimo:5},
+  {nombre:'Gas large', categoria:'Refrescos', minimo:5},
+  // FRUTAS
+  {nombre:'Mango', categoria:'Frutas', minimo:5},
+  {nombre:'Mango picante', categoria:'Frutas', minimo:5},
+  {nombre:'Fresa', categoria:'Frutas', minimo:5},
+  {nombre:'Coco', categoria:'Frutas', minimo:5},
+  {nombre:'Piña', categoria:'Frutas', minimo:5},
+  {nombre:'Maracuya', categoria:'Frutas', minimo:5},
+  {nombre:'Sandía', categoria:'Frutas', minimo:5},
+  {nombre:'Plátano', categoria:'Frutas', minimo:5},
+  {nombre:'Mora', categoria:'Frutas', minimo:5},
+  {nombre:'Violeta', categoria:'Frutas', minimo:5},
+  {nombre:'Preparado S. Francisco', categoria:'Frutas', minimo:3},
+  {nombre:'Preparado sex on the beach', categoria:'Frutas', minimo:3},
+  {nombre:'Azúcar líquida', categoria:'Frutas', minimo:10},
+  {nombre:'Flor de saúco', categoria:'Frutas', minimo:2},
+  // CAFETERÍA
+  {nombre:'Café', categoria:'Cafetería', minimo:6},
+  {nombre:'Café descafeinado', categoria:'Cafetería', minimo:2},
+  {nombre:'Magdalenas', categoria:'Cafetería', minimo:1},
+  // ALMACÉN - Family
+  {nombre:'Sacarina', categoria:'Almacén', minimo:2},
+  {nombre:'Azúcar', categoria:'Almacén', minimo:2},
+  {nombre:'Amoreno', categoria:'Almacén', minimo:1},
+  {nombre:'Leche condensada', categoria:'Almacén', minimo:6},
+  {nombre:'Manzanilla', categoria:'Almacén', minimo:2},
+  {nombre:'Te rojo', categoria:'Almacén', minimo:2},
+  {nombre:'Poleo', categoria:'Almacén', minimo:2},
+  {nombre:'Te verde', categoria:'Almacén', minimo:2},
+  {nombre:'Frutos del bosque', categoria:'Almacén', minimo:2},
+  {nombre:'Robos', categoria:'Almacén', minimo:2},
+  {nombre:'Mayonesa sobre', categoria:'Almacén', minimo:2},
+  {nombre:'Ajoacete sobre', categoria:'Almacén', minimo:2},
+  {nombre:'Ketchup sobre', categoria:'Almacén', minimo:1},
+  {nombre:'G.I. Yerbas', categoria:'Almacén', minimo:1},
+  {nombre:'G.I. Arroz', categoria:'Almacén', minimo:1},
+  {nombre:'Guantes', categoria:'Almacén', minimo:1},
+  // LIMPIEZA
+  {nombre:'Mantelas', categoria:'Limpieza', minimo:1},
+  {nombre:'Colacao', categoria:'Limpieza', minimo:2},
+];
+
+// TAREAS PRECARGADAS
+const TAREAS_INICIAL = [
+  // MAÑANA
+  {texto:'Hacer lista de compra', turno:'mañana'},
+  {texto:'Jardín', turno:'mañana'},
+  {texto:'Estantes chiringuito', turno:'mañana'},
+  {texto:'Mesas (las palas son mesas)', turno:'mañana'},
+  {texto:'Cristales (limpiar)', turno:'mañana'},
+  {texto:'Cristales fuera', turno:'mañana'},
+  {texto:'Vaciar neveras para limpiar', turno:'mañana'},
+  // TARDE
+  {texto:'Repasar wc', turno:'tarde'},
+  {texto:'Preparar cóctails', turno:'tarde'},
+  {texto:'Vaciar cubo fredor', turno:'tarde'},
+  {texto:'Vaciar cubo cafetería', turno:'tarde'},
+  {texto:'Montar mesas (dentro)', turno:'tarde'},
+  {texto:'Ordenar caja (detalle/almacén)', turno:'tarde'},
+  // NOCHE
+  {texto:'Rellenar neveras', turno:'noche'},
+  {texto:'Guardar terraza', turno:'noche'},
+  {texto:'Sacar basura (fuera, dentro, bol)', turno:'noche'},
+  {texto:'Fregar chiringuito', turno:'noche'},
+  {texto:'Dejar bayetas a remojar', turno:'noche'},
+  {texto:'Revisar stock (con foto por si falta algo)', turno:'noche'},
+  // CIERRE
+  {texto:'Sacar terraza', turno:'cierre'},
+  {texto:'Barrer', turno:'cierre'},
+  {texto:'Preparar fondo y lino', turno:'cierre'},
+  {texto:'Rellenar congelador peq.', turno:'cierre'},
+  {texto:'Limpiar Sinolor', turno:'cierre'},
+  {texto:'Limpiar cafetería', turno:'cierre'},
+  {texto:'Ordenar caja (detalle/almacén)', turno:'cierre'},
+];
+
+// ============================================================
+//  CONFIG & STATE
+// ============================================================
+let supabase_client = null;
+let MANAGER_PASS = '';
+let currentRole = null;
+let currentWorker = null;
+let currentLocal = null;  // 'bonita' | 'casino'
+let filtroTurno = 'todos';
+let realtimeSub = null;
+let stockLocal = {};
+
+const TEMAS = {
+  bonita: {
+    nombre: 'Bonita Beach Club', subtitulo: 'Playa Escollera · Cullera', emoji: '🌴',
+    bg: '#f5f0e8', topbar: 'linear-gradient(135deg,#1a2e1e,#2d3e2a)', login: 'linear-gradient(160deg,#1a2e1e,#2a1f0e)',
+    accent: '#2d6a4f', accentLight: '#e8f4ed', gold: '#c9a84c',
+    titleDisplay: '<span style="font-family:'Playfair Display',serif;font-style:italic;color:#c9a84c;font-size:1.3rem">Bonita</span><span style="font-size:0.65rem;color:#aaa;letter-spacing:2px;text-transform:uppercase;margin-left:8px">Beach Club</span>'
+  },
+  casino: {
+    nombre: "Casino l'Agricultura", subtitulo: 'Sueca · Tradició i Essència', emoji: '🏛️',
+    bg: '#f0ebe2', topbar: 'linear-gradient(135deg,#1a0e0a,#2e1a10)', login: 'linear-gradient(160deg,#1a0e0a,#2e1a10)',
+    accent: '#8b3a1a', accentLight: '#fdf0eb', gold: '#c9a030',
+    titleDisplay: '<span style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:#c9a030;letter-spacing:1px">L'AGRICULTURA</span>'
+  }
+};
+
+function applyTheme(local) {
+  const t = TEMAS[local];
+  if (!t) return;
+  document.documentElement.style.setProperty('--bg', t.bg);
+  document.documentElement.style.setProperty('--accent', t.accent);
+  document.documentElement.style.setProperty('--accent-light', t.accentLight);
+  document.documentElement.style.setProperty('--green', t.accent);
+  document.documentElement.style.setProperty('--green-light', t.accentLight);
+  document.documentElement.style.setProperty('--yellow', t.gold);
+  const topbar = document.querySelector('.topbar');
+  if (topbar) topbar.style.background = t.topbar;
+  const titleEl = document.getElementById('topbar-local-name');
+  if (titleEl) titleEl.innerHTML = t.titleDisplay;
+}
+
+// ============================================================
+//  SETUP
+// ============================================================
+async function conectar() {
+  const url = document.getElementById('sb-url').value.trim();
+  const key = document.getElementById('sb-key').value.trim();
+  const pass = document.getElementById('manager-pass').value.trim();
+  const errEl = document.getElementById('setup-error');
+  if (!url || !key || !pass) { errEl.textContent='Rellena todos los campos'; errEl.style.display='block'; return; }
+  errEl.style.display='none';
+  supabase_client = supabase.createClient(url, key);
+  MANAGER_PASS = pass;
+  const { error } = await supabase_client.from('tareas').select('id').limit(1);
+  if (error) { errEl.textContent='Error: ' + error.message; errEl.style.display='block'; return; }
+  localStorage.setItem('sb_url', url); localStorage.setItem('sb_key', key); localStorage.setItem('mgr_pass', pass);
+  showRoleScreen();
+}
+
+function showRoleScreen() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('local-screen').style.display = 'flex';
+}
+
+function selectLocal(local) {
+  currentLocal = local;
+  const t = TEMAS[local];
+  document.getElementById('local-screen').style.display = 'none';
+  // Apply theme colors to login screen
+  document.getElementById('role-screen').style.background = t.login;
+  document.getElementById('worker-login').style.background = t.login;
+  const rs = document.getElementById('role-screen');
+  rs.style.display = 'flex';
+  // Update role screen title
+  const roleTitle = rs.querySelector('.role-title');
+  if (roleTitle) roleTitle.textContent = t.emoji + ' ' + t.nombre;
+  const roleSub = rs.querySelector('.role-sub');
+  if (roleSub) roleSub.textContent = t.subtitulo;
+}
+
+async function setRole(role) {
+  if (role === 'manager') {
+    if (!MANAGER_PASS) {
+      const newPass = prompt('Primera vez: elige una contraseña de manager:');
+      if (!newPass) return;
+      MANAGER_PASS = newPass; localStorage.setItem('mgr_pass', newPass);
+    } else {
+      const pass = prompt('Contraseña de manager:');
+      if (pass !== MANAGER_PASS) { alert('Contraseña incorrecta'); return; }
+    }
+    currentRole = 'manager'; startApp();
+  } else {
+    const { data } = await supabase_client.from('workers').select('id, nombre').eq('local', currentLocal).order('nombre');
+    const sel = document.getElementById('worker-select');
+    sel.innerHTML = '<option value="">Selecciona tu nombre...</option>';
+    (data || []).forEach(w => { const o = document.createElement('option'); o.value=w.id; o.textContent=w.nombre; sel.appendChild(o); });
+    document.getElementById('role-screen').style.display = 'none';
+    document.getElementById('worker-login').style.display = 'flex';
+  }
+}
+
+async function workerLogin() {
+  const id = parseInt(document.getElementById('worker-select').value);
+  if (!id) { alert('Selecciona tu nombre'); return; }
+  const { data } = await supabase_client.from('workers').select('*').eq('id', id).single();
+  if (!data) { alert('Error al cargar'); return; }
+  currentWorker = data; currentRole = 'worker';
+  document.getElementById('worker-login').style.display = 'none';
+  startApp();
+}
+
+function startApp() {
+  document.getElementById('role-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('role-badge').textContent = currentRole === 'manager' ? '👔 Manager' : `👷 ${currentWorker.nombre}`;
+  document.querySelectorAll('.manager-only').forEach(el => el.style.display = currentRole === 'manager' ? '' : 'none');
+  if (currentRole === 'worker') {
+    document.getElementById('mi-fichaje').style.display = 'block';
+    document.getElementById('mi-nombre-title').textContent = `Mi fichaje — ${currentWorker.nombre}`;
+  }
+  document.getElementById('wa-bar').style.display = currentRole === 'manager' ? 'block' : 'none';
+  applyTheme(currentLocal);
+  loadAll(); subscribeRealtime();
+  if (currentRole === 'worker') { renderTurnoBanner(); }
+}
+
+function cerrarSesion() {
+  currentRole = null; currentWorker = null;
+  if (realtimeSub) supabase_client.removeChannel(realtimeSub);
+  document.getElementById('app').style.display = 'none';
+  currentLocal = null;
+  document.getElementById('local-screen').style.display = 'flex';
+}
+
+// ============================================================
+//  REALTIME
+// ============================================================
+function subscribeRealtime() {
+  realtimeSub = supabase_client.channel('cambios')
+    .on('postgres_changes', { event:'*', schema:'public', table:'tareas' }, () => renderTareas())
+    .on('postgres_changes', { event:'*', schema:'public', table:'compra' }, () => renderCompra())
+    .on('postgres_changes', { event:'*', schema:'public', table:'fichajes' }, () => { renderWorkers(); if(currentRole==='manager') renderSueldos(); })
+    .on('postgres_changes', { event:'*', schema:'public', table:'workers' }, () => { renderWorkers(); if(currentRole==='manager') renderSueldos(); })
+    .on('postgres_changes', { event:'*', schema:'public', table:'stock' }, () => renderStock())
+    .subscribe();
+}
+
+async function loadAll() {
+  renderTareas(); renderCompra(); renderWorkers(); renderStock();
+  if (currentRole === 'manager') { renderSueldos(); renderHistorialCierres(); }
+  renderReservas();
+  // Seed data if empty
+  await seedIfEmpty();
+}
+
+async function seedIfEmpty() {
+  const { data: tareas } = await supabase_client.from('tareas').select('id').eq('local', currentLocal).limit(1);
+  if (!tareas || tareas.length === 0) {
+    await supabase_client.from('tareas').insert(TAREAS_INICIAL.map(t => ({...t, done: false, local: currentLocal})));
+    toast('✅ Tareas cargadas automáticamente');
+  }
+  const { data: stock } = await supabase_client.from('stock').select('id').eq('local', currentLocal).limit(1);
+  if (!stock || stock.length === 0) {
+    const chunks = [];
+    for (let i = 0; i < STOCK_INICIAL.length; i += 50) chunks.push(STOCK_INICIAL.slice(i, i+50));
+    for (const chunk of chunks) {
+      await supabase_client.from('stock').insert(chunk.map(s => ({...s, cantidad: null, local: currentLocal})));
+    }
+    toast('📦 Stock cargado automáticamente');
+  }
+}
+
+// ============================================================
+//  TABS
+// ============================================================
+function showTab(tab) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + tab).classList.add('active');
+  event.target.classList.add('active');
+  if (tab === 'sueldos') renderSueldos();
+  if (tab === 'stock') renderStock();
+  if (tab === 'caja') renderHistorialCierres();
+  if (tab === 'reservas') renderReservas();
+}
+
+
+// ============================================================
+//  TURNOS Y CRONÓMETRO
+// ============================================================
+// Horarios: mañana 11-16, tarde 16-20, noche 20-02, cierre es manual
+function getTurnoActual() {
+  const h = new Date().getHours();
+  if (h >= 11 && h < 16) return 'mañana';
+  if (h >= 16 && h < 20) return 'tarde';
+  if (h >= 20 || h < 4) return 'noche';
+  return 'todos';
+}
+
+// Tareas con horario sugerido dentro del turno
+const TAREA_HORARIOS = {
+  // MAÑANA
+  'Hacer lista de compra': { turno:'mañana', horaOffset: 0 },   // al llegar
+  'Jardín': { turno:'mañana', horaOffset: 30 },
+  'Estantes chiringuito': { turno:'mañana', horaOffset: 60 },
+  'Mesas (las palas son mesas)': { turno:'mañana', horaOffset: 90 },
+  'Cristales (limpiar)': { turno:'mañana', horaOffset: 120 },
+  'Cristales fuera': { turno:'mañana', horaOffset: 150 },
+  'Vaciar neveras para limpiar': { turno:'mañana', horaOffset: 180 },
+  // TARDE
+  'Repasar wc': { turno:'tarde', horaOffset: 0 },
+  'Preparar cóctails': { turno:'tarde', horaOffset: 20 },
+  'Vaciar cubo fredor': { turno:'tarde', horaOffset: 60 },
+  'Vaciar cubo cafetería': { turno:'tarde', horaOffset: 90 },
+  'Montar mesas (dentro)': { turno:'tarde', horaOffset: 120 },
+  'Ordenar caja (detalle/almacén)': { turno:'tarde', horaOffset: 180 },
+  // NOCHE
+  'Rellenar neveras': { turno:'noche', horaOffset: 0 },
+  'Guardar terraza': { turno:'noche', horaOffset: 30 },
+  'Sacar basura (fuera, dentro, bol)': { turno:'noche', horaOffset: 60 },
+  'Fregar chiringuito': { turno:'noche', horaOffset: 90 },
+  'Dejar bayetas a remojar': { turno:'noche', horaOffset: 120 },
+  'Revisar stock (con foto por si falta algo)': { turno:'noche', horaOffset: 150 },
+  // CIERRE
+  'Sacar terraza': { turno:'cierre', horaOffset: 0 },
+  'Barrer': { turno:'cierre', horaOffset: 15 },
+  'Preparar fondo y lino': { turno:'cierre', horaOffset: 30 },
+  'Rellenar congelador peq.': { turno:'cierre', horaOffset: 45 },
+  'Limpiar Sinolor': { turno:'cierre', horaOffset: 60 },
+  'Limpiar cafetería': { turno:'cierre', horaOffset: 75 },
+};
+
+let turnoInicioMs = null;
+let notifInterval = null;
+let ultimaNotif = null;
+
+function getTurnoInfo(turno) {
+  const infos = {
+    mañana: { emoji:'🌅', nombre:'Turno Mañana', sub:'11:00 – 16:00', clase:'turno-banner-manana' },
+    tarde:  { emoji:'🌆', nombre:'Turno Tarde',  sub:'16:00 – 20:00', clase:'turno-banner-tarde' },
+    noche:  { emoji:'🌙', nombre:'Turno Noche',  sub:'20:00 – cierre', clase:'turno-banner-noche' },
+    cierre: { emoji:'🔒', nombre:'Cierre',        sub:'Tareas de cierre', clase:'turno-banner-cierre' },
+    todos:  { emoji:'📌', nombre:'Sin turno activo', sub:'Fuera de horario', clase:'turno-banner-noche' },
+  };
+  return infos[turno] || infos.todos;
+}
+
+function renderTurnoBanner() {
+  const banner = document.getElementById('turno-banner');
+  if (!banner) return;
+  const turno = getTurnoActual();
+  const info = getTurnoInfo(turno);
+  banner.innerHTML = `
+    <div class="turno-banner ${info.clase}">
+      <div class="turno-banner-emoji">${info.emoji}</div>
+      <div class="turno-banner-info">
+        <div class="turno-banner-nombre">${info.nombre}</div>
+        <div class="turno-banner-sub">${info.sub}</div>
+      </div>
+    </div>`;
+}
+
+function getHoraTarea(tarea, inicioMs) {
+  const config = TAREA_HORARIOS[tarea.texto];
+  if (!config || !inicioMs) return null;
+  return new Date(inicioMs + config.horaOffset * 60000);
+}
+
+function getTimerLabel(tarea, inicioMs) {
+  if (!tarea.hora_sugerida) return null;
+  const ahora = new Date();
+  const [hh, mm] = tarea.hora_sugerida.split(':').map(Number);
+  const horaObj = new Date(); horaObj.setHours(hh, mm, 0, 0);
+  const diff = Math.round((horaObj - ahora) / 60000);
+  if (tarea.done) return { label: '✓ Hecha', clase: 'task-timer-done' };
+  if (diff > 10) return { label: `En ${diff} min`, clase: 'task-timer-pending' };
+  if (diff >= -5) return { label: '⏰ ¡Ahora!', clase: 'task-timer-now' };
+  return { label: `Hace ${Math.abs(diff)} min`, clase: 'task-timer-late' };
+}
+
+function iniciarCronometro() {
+  turnoInicioMs = Date.now();
+  if (notifInterval) clearInterval(notifInterval);
+  notifInterval = setInterval(checkNotificaciones, 60000); // cada minuto
+  renderTareas(); // re-render con timers
+}
+
+async function checkNotificaciones() {
+  if (!turnoInicioMs) return;
+  const { data: tareas } = await supabase_client.from('tareas').select('*').eq('local', currentLocal).order('id');
+  if (!tareas) return;
+  const ahora = new Date();
+  for (const tarea of tareas) {
+    if (tarea.done) continue;
+    const hora = getHoraTarea(tarea, turnoInicioMs);
+    if (!hora) continue;
+    const diff = Math.round((hora - ahora) / 60000);
+    if (diff >= -2 && diff <= 2 && ultimaNotif !== tarea.id) {
+      ultimaNotif = tarea.id;
+      mostrarNotif(`⏰ Ahora toca: ${tarea.texto}`);
+      // Vibrar si el dispositivo lo soporta
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      break;
+    }
+  }
+  renderTareas(); // actualizar badges
+}
+
+function mostrarNotif(msg) {
+  const bar = document.getElementById('notif-bar');
+  document.getElementById('notif-txt').textContent = msg;
+  bar.classList.add('show');
+  setTimeout(() => bar.classList.remove('show'), 8000);
+}
+
+function cerrarNotif() {
+  document.getElementById('notif-bar').classList.remove('show');
+}
+
+// ============================================================
+//  TAREAS
+// ============================================================
+async function addTarea() {
+  const texto = document.getElementById('tarea-texto').value.trim();
+  const turno = document.getElementById('tarea-turno').value;
+  if (!texto) return;
+  await supabase_client.from('tareas').insert({ texto, turno, done: false, local: currentLocal });
+  document.getElementById('tarea-texto').value = '';
+  toast('Tarea añadida ✓');
+}
+
+function filterTareas(turno, btn) {
+  filtroTurno = turno;
+  document.querySelectorAll('.turno-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTareas();
+}
+
+async function toggleTarea(id, done) { await supabase_client.from('tareas').update({ done: !done }).eq('id', id); }
+async function deleteTarea(id) { await supabase_client.from('tareas').delete().eq('id', id); }
+async function updateTareaHora(id, hora) {
+  await supabase_client.from('tareas').update({ hora_sugerida: hora || null }).eq('id', id);
+  toast('Hora actualizada ✓');
+}
+async function updateTareaDuracion(id, min) {
+  await supabase_client.from('tareas').update({ duracion_min: parseInt(min) }).eq('id', id);
+  toast('Duración actualizada ✓');
+}
+
+async function renderTareas() {
+  renderTurnoBanner();
+  const lista = document.getElementById('lista-tareas');
+  const { data: tareas } = await supabase_client.from('tareas').select('*').eq('local', currentLocal).order('id');
+  
+  // Workers see their turno automatically
+  let efectivoFiltro = filtroTurno;
+  if (currentRole === 'worker' && filtroTurno === 'todos') {
+    efectivoFiltro = getTurnoActual();
+    // auto-click the right button
+    document.querySelectorAll('.turno-btn').forEach(b => {
+      b.classList.toggle('active', b.textContent.toLowerCase().includes(efectivoFiltro) || (efectivoFiltro==='todos' && b.textContent.includes('Todos')));
+    });
+  }
+  
+  const filtered = efectivoFiltro === 'todos' ? tareas || [] : (tareas || []).filter(t => t.turno === efectivoFiltro || t.turno === 'todos');
+  if (!filtered.length) { lista.innerHTML = '<div class="empty">No hay tareas para este turno</div>'; return; }
+  const badges = { mañana:'badge-mañana', tarde:'badge-tarde', noche:'badge-noche', todos:'badge-todos', cierre:'badge-cierre' };
+  const labels = { mañana:'Mañana', tarde:'Tarde', noche:'Noche', todos:'Todos', cierre:'Cierre' };
+  // Sort by hora_sugerida
+  filtered.sort((a,b) => {
+    if (!a.hora_sugerida && !b.hora_sugerida) return 0;
+    if (!a.hora_sugerida) return 1;
+    if (!b.hora_sugerida) return -1;
+    return a.hora_sugerida.localeCompare(b.hora_sugerida);
+  });
+
+  lista.innerHTML = filtered.map(t => {
+    const timer = getTimerLabel(t, turnoInicioMs);
+    const timerHtml = timer ? `<span class="task-timer ${timer.clase}">${timer.label}</span>` : '';
+    const horaDisplay = t.hora_sugerida ? `<span style="font-size:0.72rem;color:var(--ink2);font-weight:600;flex-shrink:0">${t.hora_sugerida.slice(0,5)}</span>` : '';
+    const durDisplay = t.duracion_min ? `<span style="font-size:0.68rem;color:var(--ink2);flex-shrink:0">${t.duracion_min}min</span>` : '';
+    
+    const editHtml = currentRole==='manager' ? `
+      <div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
+        <input type="time" value="${t.hora_sugerida||''}" onchange="updateTareaHora(${t.id},this.value)" 
+          style="width:90px;padding:3px 6px;font-size:0.75rem;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--ink)">
+        <input type="number" value="${t.duracion_min||15}" min="5" max="120" step="5" onchange="updateTareaDuracion(${t.id},this.value)"
+          style="width:52px;padding:3px 6px;font-size:0.75rem;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--ink)" title="Duración en minutos">
+        <button class="del-btn" onclick="deleteTarea(${t.id})">✕</button>
+      </div>` : `${horaDisplay}${timerHtml}`;
+
+    return `
+    <div class="task-item">
+      <input type="checkbox" ${t.done?'checked':''} onchange="toggleTarea(${t.id}, ${t.done})">
+      <span class="task-label ${t.done?'done':''}">${t.texto}</span>
+      <span class="badge ${badges[t.turno]||'badge-todos'}">${labels[t.turno]||t.turno}</span>
+      ${editHtml}
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+//  COMPRA
+// ============================================================
+async function addCompra() {
+  const nombre = document.getElementById('compra-nombre').value.trim();
+  const cantidad = document.getElementById('compra-cantidad').value.trim() || '1';
+  if (!nombre) return;
+  await supabase_client.from('compra').insert({ nombre, cantidad, done: false, local: currentLocal });
+  document.getElementById('compra-nombre').value = ''; document.getElementById('compra-cantidad').value = '';
+  toast('Producto añadido ✓');
+}
+async function toggleCompra(id, done) { await supabase_client.from('compra').update({ done: !done }).eq('id', id); }
+async function deleteCompra(id) { await supabase_client.from('compra').delete().eq('id', id); }
+async function clearCompraHecha() { await supabase_client.from('compra').delete().eq('done', true).eq('local', currentLocal); toast('Marcados eliminados ✓'); }
+async function clearCompraAll() { if(confirm('¿Vaciar toda la lista?')) { await supabase_client.from('compra').delete().neq('id',0); toast('Lista vaciada ✓'); } }
+
+async function renderCompra() {
+  const lista = document.getElementById('lista-compra');
+  const { data: compra } = await supabase_client.from('compra').select('*').eq('local', currentLocal).order('id');
+  if (!compra || !compra.length) { lista.innerHTML = '<div class="empty">Lista vacía</div>'; return; }
+  lista.innerHTML = compra.map(c => `
+    <div class="shop-item">
+      <input type="checkbox" ${c.done?'checked':''} onchange="toggleCompra(${c.id}, ${c.done})">
+      <span class="shop-label ${c.done?'done':''}">${c.nombre}</span>
+      <span class="shop-qty">${c.cantidad}</span>
+      ${currentRole==='manager' ? `<button class="del-btn" onclick="deleteCompra(${c.id})">✕</button>` : ''}
+    </div>`).join('');
+}
+
+// ============================================================
+//  STOCK
+// ============================================================
+async function addStockProducto() {
+  const nombre = document.getElementById('stock-nombre').value.trim();
+  const minimo = parseInt(document.getElementById('stock-minimo').value) || 1;
+  const categoria = document.getElementById('stock-cat').value;
+  if (!nombre) return;
+  await supabase_client.from('stock').insert({ nombre, minimo, categoria, cantidad: null, local: currentLocal });
+  document.getElementById('stock-nombre').value = ''; document.getElementById('stock-minimo').value = '';
+  toast('Producto añadido ✓');
+}
+
+async function renderStock() {
+  const lista = document.getElementById('lista-stock');
+  const { data: productos } = await supabase_client.from('stock').select('*').eq('local', currentLocal).order('categoria').order('nombre');
+  if (!productos || !productos.length) { lista.innerHTML = '<div class="empty">Sin productos</div>'; return; }
+
+  const cats = [...new Set(productos.map(p => p.categoria))];
+  let html = '';
+  let bajos = 0;
+
+  cats.forEach(cat => {
+    html += `<div class="stock-categoria">📦 ${cat}</div>`;
+    productos.filter(p => p.categoria === cat).forEach(p => {
+      const val = stockLocal[p.id] !== undefined ? stockLocal[p.id] : (p.cantidad !== null ? p.cantidad : '');
+      const numVal = parseFloat(val);
+      let badge = `<span class="stock-badge-pending">—</span>`;
+      if (val !== '' && !isNaN(numVal)) {
+        if (numVal < p.minimo) { badge = `<span class="stock-badge-low">⚠️ Bajo</span>`; bajos++; }
+        else badge = `<span class="stock-badge-ok">✓ OK</span>`;
+      }
+      html += `
+        <div class="stock-item">
+          <span class="stock-nombre">${p.nombre}</span>
+          <span class="stock-minimo">mín: ${p.minimo}</span>
+          <div class="stock-input-wrap">
+            <input type="number" class="stock-num" value="${val}" min="0" step="0.5"
+              oninput="stockLocal[${p.id}]=this.value;renderStockBadge(${p.id},this.value,${p.minimo})"
+              placeholder="?">
+            <span id="badge-${p.id}">${badge}</span>
+          </div>
+          ${currentRole==='manager' ? `<button class="del-btn" onclick="deleteStockProd(${p.id})">✕</button>` : ''}
+        </div>`;
+    });
+  });
+
+  lista.innerHTML = html;
+
+  // Alerta
+  if (bajos > 0) {
+    document.getElementById('stock-alerta').style.display = 'flex';
+    document.getElementById('stock-alerta-txt').textContent = `${bajos} producto${bajos>1?'s':''} por debajo del mínimo`;
+  } else {
+    document.getElementById('stock-alerta').style.display = 'none';
+  }
+}
+
+function renderStockBadge(id, val, minimo) {
+  const badge = document.getElementById('badge-' + id);
+  if (!badge) return;
+  const num = parseFloat(val);
+  if (val === '' || isNaN(num)) { badge.innerHTML = '<span class="stock-badge-pending">—</span>'; return; }
+  if (num < minimo) badge.innerHTML = '<span class="stock-badge-low">⚠️ Bajo</span>';
+  else badge.innerHTML = '<span class="stock-badge-ok">✓ OK</span>';
+  // update alert
+  const lowCount = Object.entries(stockLocal).filter(([k,v]) => {
+    const input = document.querySelector(`input.stock-num[oninput*="[${k}]"]`);
+    return false;
+  }).length;
+}
+
+async function guardarStock() {
+  const updates = Object.entries(stockLocal);
+  if (!updates.length) { toast('No hay cambios que guardar'); return; }
+  for (const [id, cantidad] of updates) {
+    await supabase_client.from('stock').update({ cantidad: parseFloat(cantidad) }).eq('id', parseInt(id));
+  }
+  stockLocal = {};
+  toast(`Stock guardado ✓`);
+  await renderStock();
+  await calcularPedido();
+}
+
+async function calcularPedido() {
+  const { data: productos } = await supabase_client.from('stock').select('*').eq('local', currentLocal).order('categoria').order('nombre');
+  const bajos = (productos || []).filter(p => p.cantidad !== null && p.cantidad < p.minimo);
+  const card = document.getElementById('pedido-card');
+  const lista = document.getElementById('lista-pedido');
+
+  if (!bajos.length) { card.style.display = 'none'; return; }
+
+  card.style.display = currentRole === 'manager' ? 'block' : 'none';
+  lista.innerHTML = bajos.map(p => `
+    <div class="pedido-item">
+      <span>${p.nombre} <span style="font-size:0.75rem;color:var(--ink2)">(${p.categoria})</span></span>
+      <span class="pedido-cant">Faltan ${p.minimo - p.cantidad} uds</span>
+    </div>`).join('');
+}
+
+async function deleteStockProd(id) {
+  await supabase_client.from('stock').delete().eq('id', id);
+  toast('Producto eliminado');
+}
+
+async function enviarPedidoWA() {
+  const { data: productos } = await supabase_client.from('stock').select('*').eq('local', currentLocal).order('categoria').order('nombre');
+  const bajos = (productos || []).filter(p => p.cantidad !== null && p.cantidad < p.minimo);
+  if (!bajos.length) { toast('No hay productos por pedir'); return; }
+  const hoy = new Date().toLocaleDateString('es-ES');
+  let msg = `📦 *PEDIDO — ${hoy}*\n\n`;
+  const cats = [...new Set(bajos.map(p => p.categoria))];
+  cats.forEach(cat => {
+    msg += `*${cat}*\n`;
+    bajos.filter(p => p.categoria === cat).forEach(p => msg += `• ${p.nombre}: pedir ${p.minimo - p.cantidad} uds (stock: ${p.cantidad}, mín: ${p.minimo})\n`);
+    msg += '\n';
+  });
+  window.open('https://wa.me/34628315326?text=' + encodeURIComponent(msg), '_blank');
+}
+
+// ============================================================
+//  FICHAJE
+// ============================================================
+async function addWorker() {
+  const nombre = document.getElementById('worker-nombre').value.trim();
+  const tarifa = parseFloat(document.getElementById('worker-tarifa').value) || 10;
+  if (!nombre) return;
+  await supabase_client.from('workers').insert({ nombre, tarifa, activo: false, entrada: null, local: currentLocal });
+  document.getElementById('worker-nombre').value = ''; document.getElementById('worker-tarifa').value = '';
+  toast('Trabajador añadido ✓');
+}
+
+async function deleteWorker(id) {
+  if (!confirm('¿Eliminar trabajador y sus fichajes?')) return;
+  await supabase_client.from('fichajes').delete().eq('worker_id', id);
+  await supabase_client.from('workers').delete().eq('id', id);
+  toast('Trabajador eliminado');
+}
+
+async function fichar(id) {
+  const { data: w } = await supabase_client.from('workers').select('*').eq('id', id).single();
+  if (!w) return;
+  const ahora = new Date().toISOString();
+  if (!w.activo) {
+    await supabase_client.from('workers').update({ activo: true, entrada: ahora }).eq('id', id);
+    toast(`${w.nombre} — entrada ✓`);
+    if (currentRole === 'worker') { iniciarCronometro(); }
+  } else {
+    const horas = Math.round((new Date() - new Date(w.entrada)) / 36000) / 100;
+    await supabase_client.from('fichajes').insert({ worker_id: id, entrada: w.entrada, salida: ahora, horas });
+    await supabase_client.from('workers').update({ activo: false, entrada: null }).eq('id', id);
+    toast(`${w.nombre} — salida: ${horas}h ✓`);
+  }
+}
+
+async function ficharYo() {
+  if (!currentWorker) return;
+  await fichar(currentWorker.id);
+  const { data } = await supabase_client.from('workers').select('*').eq('id', currentWorker.id).single();
+  currentWorker = data; updateMiFichaje();
+}
+
+async function updateMiFichaje() {
+  if (!currentWorker) return;
+  const { data: w } = await supabase_client.from('workers').select('*').eq('id', currentWorker.id).single();
+  currentWorker = w;
+  const btn = document.getElementById('btn-fichar-yo');
+  const estado = document.getElementById('mi-estado');
+  if (w.activo) {
+    const diff = Math.round((new Date() - new Date(w.entrada)) / 60000);
+    estado.innerHTML = `🟢 <strong>Turno activo</strong> — lleva ${diff} min (desde ${fmtHora(w.entrada)})`;
+    btn.textContent = '⏹ Marcar salida'; btn.className = 'btn btn-full';
+    btn.style.background = '#e74c3c'; btn.style.color = '#fff';
+  } else {
+    estado.textContent = 'Sin turno activo';
+    btn.textContent = '▶ Marcar entrada'; btn.className = 'btn btn-green btn-full'; btn.style.background = '';
+  }
+}
+
+async function renderWorkers() {
+  const lista = document.getElementById('lista-workers');
+  const { data: workers } = await supabase_client.from('workers').select('*').eq('local', currentLocal).order('nombre');
+  const { data: fichajes } = await supabase_client.from('fichajes').select('*');
+  if (currentRole === 'worker') { updateMiFichaje(); lista.innerHTML = ''; return; }
+  if (!workers || !workers.length) { lista.innerHTML = '<div class="empty">No hay trabajadores</div>'; return; }
+  lista.innerHTML = workers.map(w => {
+    const wF = (fichajes||[]).filter(f => f.worker_id === w.id);
+    const totalH = wF.reduce((s,f) => s + f.horas, 0);
+    const deuda = (totalH * w.tarifa).toFixed(2);
+    const ultimos = wF.slice(-3).reverse();
+    return `
+    <div class="worker-card">
+      <div class="worker-header">
+        <div><div class="worker-name-big">${w.nombre}</div><div style="font-size:0.78rem;color:var(--ink2)">${w.tarifa}€/h · ${wF.length} turnos</div></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="pill ${w.activo?'pill-in':'pill-out'}">${w.activo?'🟢 Trabajando':'⚪ Libre'}</span>
+          <button class="del-btn" onclick="deleteWorker(${w.id})">✕</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-sm ${w.activo?'':'btn-green'}" onclick="fichar(${w.id})"
+          style="${w.activo?'background:#e74c3c;color:#fff':''}">${w.activo?'⏹ Salida':'▶ Entrada'}</button>
+        <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.2rem;color:var(--accent)">${totalH.toFixed(1)}h</div>
+        <div style="font-size:0.88rem;color:var(--ink2)">→ <strong>${deuda}€</strong></div>
+      </div>
+      ${w.activo ? `<div style="margin-top:8px;font-size:0.8rem;color:var(--green)">🕐 Entrada: ${fmtHora(w.entrada)}</div>` : ''}
+      ${ultimos.length ? `<div class="fichaje-log"><div class="section-label">Últimos turnos</div>${ultimos.map(f=>`
+        <div class="log-row" style="justify-content:space-between">
+          <span>📅 ${fmtFecha(f.entrada)} &nbsp; 🟢 <span class="log-time">${fmtHora(f.entrada)}</span> → 🔴 <span class="log-time">${fmtHora(f.salida)}</span> &nbsp; <span class="log-time">${f.horas}h</span></span>
+          <button class="del-btn" onclick="editarFichaje(${f.id},'${f.entrada}','${f.salida}')" title="Editar">✏️</button>
+        </div>`).join('')}</div>` : ''}
+      <div class="fichaje-edit" id="edit-form-${w.id}" style="display:none">
+        <div class="section-label">✏️ Editar / Añadir turno</div>
+        <div class="fichaje-edit-row">
+          <label>Entrada</label>
+          <input type="datetime-local" id="edit-entrada-${w.id}">
+        </div>
+        <div class="fichaje-edit-row">
+          <label>Salida</label>
+          <input type="datetime-local" id="edit-salida-${w.id}">
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="btn btn-green btn-sm" onclick="guardarFichajeManual(${w.id})">💾 Guardar</button>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('edit-form-${w.id}').style.display='none'">Cancelar</button>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="toggleEditForm(${w.id})" style="margin-top:8px;font-size:0.75rem">➕ Añadir / editar turno</button>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+//  EDITAR FICHAJES
+// ============================================================
+let editandoFichajeId = null;
+let editandoWorkerId = null;
+
+function toggleEditForm(workerId) {
+  const form = document.getElementById('edit-form-' + workerId);
+  if (!form) return;
+  const visible = form.style.display !== 'none';
+  form.style.display = visible ? 'none' : 'block';
+  if (!visible) {
+    // Set default to today
+    const now = new Date();
+    const local = new Date(now - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.getElementById('edit-entrada-' + workerId).value = local;
+    document.getElementById('edit-salida-' + workerId).value = local;
+    editandoFichajeId = null;
+    editandoWorkerId = workerId;
+  }
+}
+
+function editarFichaje(fichajeId, entrada, salida) {
+  // Find which worker card this belongs to - search all edit forms
+  editandoFichajeId = fichajeId;
+  // Convert ISO to datetime-local format
+  const toLocal = iso => new Date(new Date(iso) - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  
+  // Find the worker card containing this fichaje
+  document.querySelectorAll('[id^="edit-form-"]').forEach(form => {
+    const wId = form.id.replace('edit-form-', '');
+    form.style.display = 'block';
+    document.getElementById('edit-entrada-' + wId).value = toLocal(entrada);
+    document.getElementById('edit-salida-' + wId).value = toLocal(salida);
+    editandoWorkerId = parseInt(wId);
+  });
+}
+
+async function guardarFichajeManual(workerId) {
+  const entradaVal = document.getElementById('edit-entrada-' + workerId).value;
+  const salidaVal = document.getElementById('edit-salida-' + workerId).value;
+
+  if (!entradaVal || !salidaVal) { toast('Rellena entrada y salida'); return; }
+
+  const entrada = new Date(entradaVal).toISOString();
+  const salida = new Date(salidaVal).toISOString();
+
+  if (new Date(salida) <= new Date(entrada)) { toast('La salida debe ser posterior a la entrada'); return; }
+
+  const horas = Math.round((new Date(salida) - new Date(entrada)) / 36000) / 100;
+
+  if (editandoFichajeId) {
+    // Editar fichaje existente
+    const { error } = await supabase_client.from('fichajes')
+      .update({ entrada, salida, horas })
+      .eq('id', editandoFichajeId);
+    if (error) { toast('Error: ' + error.message); return; }
+    toast(`Fichaje actualizado: ${horas}h ✓`);
+    editandoFichajeId = null;
+  } else {
+    // Añadir fichaje nuevo
+    const { error } = await supabase_client.from('fichajes')
+      .insert({ worker_id: workerId, entrada, salida, horas });
+    if (error) { toast('Error: ' + error.message); return; }
+    toast(`Turno añadido: ${horas}h ✓`);
+  }
+
+  document.getElementById('edit-form-' + workerId).style.display = 'none';
+  renderWorkers();
+}
+
+async function borrarFichaje(fichajeId) {
+  if (!confirm('¿Borrar este fichaje?')) return;
+  await supabase_client.from('fichajes').delete().eq('id', fichajeId);
+  toast('Fichaje eliminado');
+  renderWorkers();
+}
+
+// ============================================================
+//  SUELDOS
+// ============================================================
+async function resetFichajes() {
+  if (!confirm('¿Reiniciar todos los fichajes?')) return;
+  await supabase_client.from('fichajes').delete().neq('id', 0);
+  await supabase_client.from('workers').update({ activo: false, entrada: null }).neq('id', 0);
+  toast('Fichajes reiniciados ✓'); renderSueldos();
+}
+
+async function renderSueldos() {
+  const div = document.getElementById('resumen-sueldos');
+  const { data: workers } = await supabase_client.from('workers').select('*').eq('local', currentLocal).order('nombre');
+  const { data: fichajes } = await supabase_client.from('fichajes').select('*');
+  if (!workers || !workers.length) { div.innerHTML = '<div class="empty">Sin trabajadores</div>'; return; }
+  let total = 0;
+  div.innerHTML = workers.map(w => {
+    const h = (fichajes||[]).filter(f => f.worker_id === w.id).reduce((s,f) => s+f.horas, 0);
+    const deuda = h * w.tarifa; total += deuda;
+    return `<div class="salary-card"><div><div class="salary-name">${w.nombre}</div><div class="salary-detail">${h.toFixed(2)}h × ${w.tarifa}€/h</div><div class="salary-detail">${(fichajes||[]).filter(f=>f.worker_id===w.id).length} turnos</div></div><div class="salary-amount">${deuda.toFixed(2)}€</div></div>`;
+  }).join('') + `<div class="total-bar"><div><div class="total-label">Total a pagar</div></div><div class="total-amount">${total.toFixed(2)}€</div></div>`;
+}
+
+
+// ============================================================
+//  CIERRE DE CAJA
+// ============================================================
+function updateCierrePreview() {
+  const ef = parseFloat(document.getElementById('cierre-efectivo').value) || 0;
+  const tj = parseFloat(document.getElementById('cierre-tarjeta').value) || 0;
+  const cambio = parseFloat(document.getElementById('cierre-cambio').value) || 0;
+  const efectivo_real = ef - cambio;
+  const total = efectivo_real + tj;
+  const preview = document.getElementById('cierre-total-preview');
+  if (preview) {
+    preview.style.display = 'block';
+    document.getElementById('cierre-total-num').textContent = total.toFixed(2) + '€';
+    document.getElementById('cierre-desglose').textContent =
+      `Efectivo real: ${efectivo_real.toFixed(2)}€  |  Tarjeta: ${tj.toFixed(2)}€  |  Cambio dejado: ${cambio.toFixed(2)}€`;
+  }
+}
+
+async function guardarCierre() {
+  const ef = parseFloat(document.getElementById('cierre-efectivo').value) || 0;
+  const tj = parseFloat(document.getElementById('cierre-tarjeta').value) || 0;
+  const cambio = parseFloat(document.getElementById('cierre-cambio').value) || 0;
+  const notas = document.getElementById('cierre-notas').value.trim();
+  const efectivo_real = ef - cambio;
+  const total = efectivo_real + tj;
+  const worker_id = currentWorker ? currentWorker.id : null;
+
+  if (ef === 0 && tj === 0) { toast('Introduce al menos un importe'); return; }
+
+  const quien = currentWorker ? currentWorker.nombre : 'Manager';
+  const { error } = await supabase_client.from('cierres').insert({
+    efectivo: efectivo_real,
+    tarjeta: tj,
+    total: total,
+    notas: [notas, cambio > 0 ? `Fondo cambio: ${cambio}€` : ''].filter(Boolean).join(' | '),
+    worker_id,
+    worker_nombre: quien,
+    local: currentLocal
+  });
+
+  if (error) { toast('Error: ' + error.message); console.error(error); return; }
+
+  document.getElementById('cierre-efectivo').value = '';
+  document.getElementById('cierre-tarjeta').value = '';
+  document.getElementById('cierre-cambio').value = '';
+  document.getElementById('cierre-notas').value = '';
+  document.getElementById('cierre-total-preview').style.display = 'none';
+  toast('Cierre guardado ✓');
+  renderHistorialCierres();
+
+  // Enviar WhatsApp al manager
+  await enviarCierreWhatsApp(efectivo_real, tj, cambio, total, notas);
+}
+
+async function enviarCierreWhatsApp(efectivo, tarjeta, cambio, total, notas) {
+  const ahora = new Date();
+  const fecha = ahora.toLocaleDateString('es-ES', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' });
+  const hora = ahora.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
+  const diaSemana = ahora.getDay();
+  const quien = currentWorker ? currentWorker.nombre : 'Manager';
+
+  let msg = `🔒 *CIERRE DE CAJA*
+`;
+  msg += `📅 ${fecha} · ${hora}
+`;
+  msg += `👤 ${quien}
+
+`;
+  msg += `💵 Efectivo (sin cambio): *${efectivo.toFixed(2)}€*
+`;
+  msg += `💳 Tarjeta: *${tarjeta.toFixed(2)}€*
+`;
+  if (cambio > 0) msg += `🔄 Fondo de cambio dejado: *${cambio.toFixed(2)}€*
+`;
+  msg += `
+💰 *TOTAL FACTURACIÓN: ${total.toFixed(2)}€*
+`;
+  if (notas) msg += `
+📝 ${notas}
+`;
+
+  // Lista de compra solo lunes (1) y jueves (4)
+  if (diaSemana === 1 || diaSemana === 4) {
+    const diaLabel = diaSemana === 1 ? 'Lunes' : 'Jueves';
+    const { data: compra } = await supabase_client.from('compra').select('*').eq('local', currentLocal).order('id');
+    const pendientes = (compra || []).filter(c => !c.done);
+    const hechos = (compra || []).filter(c => c.done);
+    msg += `
+🛒 *LISTA DE LA COMPRA (${diaLabel})*
+`;
+    if (pendientes.length) { msg += `
+_Por comprar:_
+`; pendientes.forEach(c => msg += `• ${c.nombre} (${c.cantidad})
+`); }
+    if (hechos.length) { msg += `
+_Ya comprado:_
+`; hechos.forEach(c => msg += `✅ ${c.nombre}
+`); }
+    if (!pendientes.length && !hechos.length) msg += `_Lista vacía_
+`;
+    // Reset all items to unchecked after sending
+    await supabase_client.from('compra').update({ done: false }).eq('local', currentLocal);
+    toast('Lista de compra reiniciada ✓');
+  }
+
+  // Stock bajo
+  const { data: todosStock } = await supabase_client.from('stock').select('*');
+  const bajos = (todosStock || []).filter(p => p.cantidad !== null && p.cantidad < p.minimo);
+  if (bajos.length) {
+    msg += `
+⚠️ *STOCK BAJO (${bajos.length} productos)*
+`;
+    bajos.slice(0, 6).forEach(p => msg += `• ${p.nombre}: ${p.cantidad} (mín: ${p.minimo})
+`);
+    if (bajos.length > 6) msg += `_...y ${bajos.length - 6} más_
+`;
+  }
+
+  window.open('https://wa.me/34628315326?text=' + encodeURIComponent(msg), '_blank');
+}
+
+async function renderHistorialCierres() {
+  const div = document.getElementById('historial-cierres');
+  if (!div) return;
+
+  const { data, error } = await supabase_client
+    .from('cierres')
+    .select('id, efectivo, tarjeta, total, notas, created_at, worker_nombre')
+    .eq('local', currentLocal)
+    .order('created_at', { ascending: false })
+    .limit(30);
+
+  if (error) { console.error('Error cierres:', error); div.innerHTML = '<div class="empty">Error al cargar</div>'; return; }
+  if (!data || !data.length) { div.innerHTML = '<div class="empty">Sin cierres registrados</div>'; return; }
+
+  let totalEf = 0, totalTj = 0;
+  const rows = data.map(c => {
+    const ef = parseFloat(c.efectivo) || 0;
+    const tj = parseFloat(c.tarjeta) || 0;
+    const tot = parseFloat(c.total) || (ef + tj);
+    totalEf += ef; totalTj += tj;
+    const fecha = new Date(c.created_at).toLocaleDateString('es-ES', { weekday:'short', day:'2-digit', month:'2-digit' });
+    const hora = new Date(c.created_at).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
+    const quien = c.worker_nombre || 'Manager';
+    return `
+    <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:600;font-size:0.88rem">${fecha} · ${hora} · ${quien}</div>
+          <div style="font-size:0.75rem;color:var(--ink2);margin-top:2px">
+            💵 ${ef.toFixed(2)}€ &nbsp; 💳 ${tj.toFixed(2)}€
+            ${c.notas ? ` · 📝 ${c.notas}` : ''}
+          </div>
+        </div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;color:var(--accent)">${tot.toFixed(2)}€</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const totales = `
+  <div style="margin-top:14px;padding:14px;background:var(--ink);border-radius:10px">
+    <div style="font-size:0.72rem;color:#888;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">Totales acumulados</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div><div style="font-size:0.72rem;color:#aaa">💵 Efectivo</div><div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--green)">${totalEf.toFixed(2)}€</div></div>
+      <div><div style="font-size:0.72rem;color:#aaa">💳 Tarjeta</div><div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:#60a5fa">${totalTj.toFixed(2)}€</div></div>
+      <div><div style="font-size:0.72rem;color:#aaa">💰 Total</div><div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--yellow)">${(totalEf+totalTj).toFixed(2)}€</div></div>
+    </div>
+  </div>`;
+
+  div.innerHTML = rows + totales;
+}
+
+function exportarCierresPDF() {
+  const div = document.getElementById('historial-cierres');
+  if (!div) return;
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>Historial Cierres</title>
+  <style>body{font-family:Arial,sans-serif;padding:24px;font-size:13px;color:#1a1612}h1{font-size:18px;margin-bottom:4px}.sub{color:#888;font-size:12px;margin-bottom:20px}.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #e0dbd0}.label{font-weight:600}.amount{font-weight:800;font-size:15px;color:#d4420a}.totals{background:#1a1612;color:#fff;padding:14px;border-radius:8px;margin-top:16px;display:flex;gap:24px}.t-item{}.t-label{font-size:11px;color:#888}.t-val{font-size:16px;font-weight:800}</style>
+  </head><body>
+  <h1>📊 Historial de Cierres — Mi Local</h1>
+  <p class="sub">Generado: ${new Date().toLocaleString('es-ES')}</p>
+  ${div.innerHTML}
+  </body></html>`);
+  win.document.close();
+  setTimeout(() => win.print(), 500);
+}
+
+// ============================================================
+//  ENVIAR STOCK WHATSAPP
+// ============================================================
+async function enviarStockWhatsApp() {
+  const { data: productos } = await supabase_client.from('stock').select('*').eq('local', currentLocal).order('categoria').order('nombre');
+  if (!productos || !productos.length) { toast('Sin datos de stock'); return; }
+
+  const hoy = new Date().toLocaleDateString('es-ES', { weekday:'long', day:'2-digit', month:'2-digit' });
+  const hora = new Date().toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
+  const quien = currentWorker ? currentWorker.nombre : 'Manager';
+
+  let msg = `📦 *REVISIÓN DE STOCK*
+`;
+  msg += `📅 ${hoy} · ${hora}
+`;
+  msg += `👤 ${quien}
+
+`;
+
+  const bajos = productos.filter(p => p.cantidad !== null && p.cantidad < p.minimo);
+  const ok = productos.filter(p => p.cantidad !== null && p.cantidad >= p.minimo);
+  const sinRevisar = productos.filter(p => p.cantidad === null);
+
+  if (bajos.length) {
+    msg += `⚠️ *BAJO MÍNIMO (${bajos.length})*
+`;
+    const cats = [...new Set(bajos.map(p => p.categoria))];
+    cats.forEach(cat => {
+      msg += `
+*${cat}*
+`;
+      bajos.filter(p => p.categoria === cat).forEach(p => {
+        msg += `• ${p.nombre}: ${p.cantidad} (mín: ${p.minimo})
+`;
+      });
+    });
+  }
+
+  if (sinRevisar.length) {
+    msg += `
+❓ *SIN REVISAR (${sinRevisar.length})*
+`;
+    sinRevisar.slice(0, 5).forEach(p => msg += `• ${p.nombre}
+`);
+    if (sinRevisar.length > 5) msg += `_...y ${sinRevisar.length - 5} más_
+`;
+  }
+
+  msg += `
+✅ OK: ${ok.length} productos`;
+
+  window.open('https://wa.me/34628315326?text=' + encodeURIComponent(msg), '_blank');
+  // Reset stock quantities to null after sending
+  await supabase_client.from('stock').update({ cantidad: null }).eq('local', currentLocal);
+  stockLocal = {};
+  toast('Stock reiniciado para próxima revisión ✓');
+  renderStock();
+}
+
+
+// ============================================================
+//  RESERVAS
+// ============================================================
+let filtroReservas = 'hoy';
+
+function filterReservas(filtro, btn) {
+  filtroReservas = filtro;
+  document.querySelectorAll('#sec-reservas .turno-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderReservas();
+}
+
+async function addReserva() {
+  const nombre = document.getElementById('res-nombre').value.trim();
+  const telefono = document.getElementById('res-tel').value.trim();
+  const fecha = document.getElementById('res-fecha').value;
+  const hora = document.getElementById('res-hora').value;
+  const personas = parseInt(document.getElementById('res-personas').value) || 1;
+  const menu_especial = document.getElementById('res-menu').value;
+  const notas = document.getElementById('res-notas').value.trim();
+
+  if (!nombre || !fecha || !hora) { toast('Nombre, fecha y hora son obligatorios'); return; }
+
+  const { error } = await supabase_client.from('reservas').insert({
+    local: currentLocal, nombre, telefono, fecha, hora, personas, menu_especial, notas, estado: 'pendiente'
+  });
+
+  if (error) { toast('Error: ' + error.message); return; }
+
+  document.getElementById('res-nombre').value = '';
+  document.getElementById('res-tel').value = '';
+  document.getElementById('res-fecha').value = '';
+  document.getElementById('res-hora').value = '';
+  document.getElementById('res-personas').value = '';
+  document.getElementById('res-menu').value = '';
+  document.getElementById('res-notas').value = '';
+  toast('Reserva guardada ✓');
+  renderReservas();
+}
+
+async function cambiarEstadoReserva(id, estado) {
+  await supabase_client.from('reservas').update({ estado }).eq('id', id);
+  renderReservas();
+}
+
+async function borrarReserva(id) {
+  if (!confirm('¿Eliminar esta reserva?')) return;
+  await supabase_client.from('reservas').delete().eq('id', id);
+  renderReservas();
+}
+
+async function renderReservas() {
+  const lista = document.getElementById('lista-reservas');
+  if (!lista) return;
+
+  const hoy = new Date().toISOString().slice(0,10);
+  const manana = new Date(Date.now() + 86400000).toISOString().slice(0,10);
+  const semanaFin = new Date(Date.now() + 7*86400000).toISOString().slice(0,10);
+
+  let query = supabase_client.from('reservas').select('*').eq('local', currentLocal).order('fecha').order('hora');
+
+  if (filtroReservas === 'hoy') query = query.eq('fecha', hoy);
+  else if (filtroReservas === 'manana') query = query.eq('fecha', manana);
+  else if (filtroReservas === 'semana') query = query.gte('fecha', hoy).lte('fecha', semanaFin);
+
+  const { data: reservas } = await query;
+
+  // Update public link
+  const enlaceEl = document.getElementById('enlace-publico');
+  if (enlaceEl) {
+    const base = window.location.href.split('?')[0];
+    enlaceEl.textContent = `${base}?reserva=${currentLocal}`;
+  }
+
+  if (!reservas || !reservas.length) {
+    lista.innerHTML = '<div class="empty">No hay reservas para este período</div>';
+    return;
+  }
+
+  const estadoBadge = { pendiente:'badge-pendiente', confirmada:'badge-confirmada', cancelada:'badge-cancelada' };
+  const estadoLabel = { pendiente:'⏳ Pendiente', confirmada:'✅ Confirmada', cancelada:'❌ Cancelada' };
+
+  lista.innerHTML = reservas.map(r => {
+    const fecha = new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-ES', { weekday:'short', day:'2-digit', month:'2-digit' });
+    const hora = r.hora ? r.hora.slice(0,5) : '';
+    return `
+    <div class="reserva-card ${r.estado}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div class="reserva-nombre">${r.nombre}</div>
+        <span class="reserva-badge ${estadoBadge[r.estado]||'badge-pendiente'}">${estadoLabel[r.estado]||r.estado}</span>
+      </div>
+      <div class="reserva-info">
+        <span>📅 ${fecha}</span>
+        <span>🕐 ${hora}</span>
+        <span>👥 ${r.personas} personas</span>
+        ${r.telefono ? `<span>📱 ${r.telefono}</span>` : ''}
+      </div>
+      ${r.menu_especial ? `<div style="margin-top:6px;font-size:0.82rem;color:var(--accent);font-weight:600">🍽️ ${r.menu_especial}</div>` : ''}
+      ${r.notas ? `<div style="margin-top:4px;font-size:0.78rem;color:var(--ink2)">📝 ${r.notas}</div>` : ''}
+      ${currentRole === 'manager' ? `
+      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+        ${r.estado !== 'confirmada' ? `<button class="btn btn-green btn-sm" onclick="cambiarEstadoReserva(${r.id},'confirmada')">✅ Confirmar</button>` : ''}
+        ${r.estado !== 'cancelada' ? `<button class="btn btn-ghost btn-sm" onclick="cambiarEstadoReserva(${r.id},'cancelada')" style="color:#dc2626;border-color:#dc2626">❌ Cancelar</button>` : ''}
+        <button class="del-btn" onclick="borrarReserva(${r.id})">✕</button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function copiarEnlace() {
+  const base = window.location.href.split('?')[0];
+  const enlace = `${base}?reserva=${currentLocal}`;
+  navigator.clipboard.writeText(enlace).then(() => toast('Enlace copiado ✓'));
+}
+
+// Check if opened as public reservation form
+function checkPublicReserva() {
+  const params = new URLSearchParams(window.location.search);
+  const local = params.get('reserva');
+  if (local && TEMAS[local]) {
+    currentLocal = local;
+    showFormularioPublico(local);
+  }
+}
+
+function showFormularioPublico(local) {
+  const t = TEMAS[local];
+  document.getElementById('setup-screen').style.display = 'none';
+  document.body.innerHTML = `
+  <div style="min-height:100vh;background:${t.login};display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:24px;font-family:'DM Sans',sans-serif">
+    <div style="text-align:center;margin-bottom:28px;margin-top:20px">
+      <div style="font-size:0.65rem;color:#888;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">RESERVA EN</div>
+      <div style="font-family:'${t.titleFont}',serif;font-style:italic;font-size:2.2rem;color:${t.gold}">${local === 'bonita' ? 'Bonita' : "L'Agricultura"}</div>
+      <div style="font-size:0.65rem;color:#777;letter-spacing:2px;text-transform:uppercase;margin-top:4px">${t.subtitulo}</div>
+    </div>
+
+    <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:16px;padding:24px;width:100%;max-width:400px;backdrop-filter:blur(10px)">
+      <div style="margin-bottom:12px"><label style="font-size:0.72rem;color:#aaa;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Nombre *</label>
+        <input id="pub-nombre" type="text" placeholder="Tu nombre" style="width:100%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:12px;border-radius:8px;font-size:0.9rem;outline:none"></div>
+      <div style="margin-bottom:12px"><label style="font-size:0.72rem;color:#aaa;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Teléfono</label>
+        <input id="pub-tel" type="tel" placeholder="628 000 000" style="width:100%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:12px;border-radius:8px;font-size:0.9rem;outline:none"></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <div style="flex:1"><label style="font-size:0.72rem;color:#aaa;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Fecha *</label>
+          <input id="pub-fecha" type="date" style="width:100%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:12px;border-radius:8px;font-size:0.9rem;outline:none"></div>
+        <div style="flex:1"><label style="font-size:0.72rem;color:#aaa;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Hora *</label>
+          <input id="pub-hora" type="time" style="width:100%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:12px;border-radius:8px;font-size:0.9rem;outline:none"></div>
+      </div>
+      <div style="margin-bottom:12px"><label style="font-size:0.72rem;color:#aaa;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Personas *</label>
+        <input id="pub-personas" type="number" placeholder="2" min="1" style="width:100%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:12px;border-radius:8px;font-size:0.9rem;outline:none"></div>
+      <div style="margin-bottom:12px"><label style="font-size:0.72rem;color:#aaa;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Menú especial</label>
+        <select id="pub-menu" style="width:100%;background:rgba(30,30,30,0.8);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:12px;border-radius:8px;font-size:0.9rem;outline:none">
+          <option value="">Sin menú especial</option>
+          <option value="Arroz">🍚 Arroz</option>
+          <option value="Paella">🥘 Paella</option>
+          <option value="Fideuà">🍝 Fideuà</option>
+          <option value="Menú grupo">👥 Menú grupo</option>
+          <option value="Cumpleaños">🎂 Cumpleaños</option>
+          <option value="Otro">📝 Otro</option>
+        </select></div>
+      <div style="margin-bottom:20px"><label style="font-size:0.72rem;color:#aaa;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Notas adicionales</label>
+        <textarea id="pub-notas" placeholder="Alergias, peticiones especiales..." style="width:100%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:12px;border-radius:8px;font-size:0.9rem;outline:none;min-height:70px;resize:none"></textarea></div>
+      <button onclick="enviarReservaPublica('${local}')" style="width:100%;background:${t.accent};color:#fff;border:none;border-radius:8px;padding:14px;font-size:1rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
+        Solicitar reserva →
+      </button>
+    </div>
+    <div id="pub-msg" style="margin-top:16px;text-align:center;color:#aaa;font-size:0.85rem"></div>
+    <div style="margin-top:24px;color:#555;font-size:0.7rem;letter-spacing:2px">🐝 GRUPO COLMENA</div>
+  </div>`;
+}
+
+async function enviarReservaPublica(local) {
+  const nombre = document.getElementById('pub-nombre').value.trim();
+  const telefono = document.getElementById('pub-tel').value.trim();
+  const fecha = document.getElementById('pub-fecha').value;
+  const hora = document.getElementById('pub-hora').value;
+  const personas = parseInt(document.getElementById('pub-personas').value) || 1;
+  const menu_especial = document.getElementById('pub-menu').value;
+  const notas = document.getElementById('pub-notas').value.trim();
+
+  if (!nombre || !fecha || !hora) {
+    document.getElementById('pub-msg').textContent = '⚠️ Nombre, fecha y hora son obligatorios';
+    document.getElementById('pub-msg').style.color = '#e07b54';
+    return;
+  }
+
+  const { error } = await supabase_client.from('reservas').insert({
+    local, nombre, telefono, fecha, hora, personas, menu_especial, notas, estado: 'pendiente'
+  });
+
+  if (error) {
+    document.getElementById('pub-msg').textContent = 'Error al enviar. Inténtalo de nuevo.';
+    return;
+  }
+
+  document.getElementById('pub-msg').innerHTML = `✅ <strong style="color:#fff">¡Reserva enviada!</strong><br><span style="font-size:0.8rem">Te confirmaremos por teléfono en breve.</span>`;
+  document.querySelector('button[onclick*="enviarReservaPublica"]').disabled = true;
+  document.querySelector('button[onclick*="enviarReservaPublica"]').style.opacity = '0.5';
+}
+
+// ============================================================
+//  WHATSAPP
+// ============================================================
+async function compartirWhatsApp() {
+  const hoy = new Date().toLocaleDateString('es-ES');
+  let msg = `📋 *RESUMEN LOCAL — ${hoy}*\n\n`;
+  const { data: tareas } = await supabase_client.from('tareas').select('*').eq('local', currentLocal).order('id');
+  const pendientes = (tareas||[]).filter(t => !t.done);
+  if (pendientes.length) {
+    msg += `✅ *TAREAS PENDIENTES*\n`;
+    ['mañana','tarde','noche','cierre','todos'].forEach(turno => {
+      const ts = pendientes.filter(t => t.turno === turno);
+      const emo = { mañana:'🌅', tarde:'🌆', noche:'🌙', cierre:'🔒', todos:'📌' };
+      if (ts.length) { msg += `\n${emo[turno]} _${turno.toUpperCase()}_\n`; ts.forEach(t => msg += `• ${t.texto}\n`); }
+    });
+    msg += '\n';
+  }
+  const { data: compra } = await supabase_client.from('compra').select('*').eq('local', currentLocal).order('id');
+  const compraP = (compra||[]).filter(c => !c.done);
+  if (compraP.length) { msg += `🛒 *LISTA DE LA COMPRA*\n`; compraP.forEach(c => msg += `• ${c.nombre} (${c.cantidad})\n`); msg += '\n'; }
+  const { data: workers } = await supabase_client.from('workers').select('*').eq('local', currentLocal).order('nombre');
+  const { data: fichajes } = await supabase_client.from('fichajes').select('*');
+  if (workers && workers.length) {
+    msg += `💶 *SUELDOS*\n`; let total = 0;
+    workers.forEach(w => { const h=(fichajes||[]).filter(f=>f.worker_id===w.id).reduce((s,f)=>s+f.horas,0); const d=h*w.tarifa; total+=d; msg+=`• ${w.nombre}: ${h.toFixed(1)}h → *${d.toFixed(2)}€*\n`; });
+    msg += `\n💰 *TOTAL: ${total.toFixed(2)}€*`;
+  }
+  window.open('https://wa.me/34628315326?text=' + encodeURIComponent(msg), '_blank');
+}
+
+// ============================================================
+//  UTILS
+// ============================================================
+function fmtHora(iso) { return new Date(iso).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' }); }
+function fmtFecha(iso) { return new Date(iso).toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit' }); }
+function toast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+
+// ============================================================
+//  AUTO-LOAD
+// ============================================================
+window.addEventListener('load', () => {
+  const SB_URL = 'https://fsevueuvdjuctiekiryz.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzZXZ1ZXV2ZGp1Y3RpZWtpcnl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1OTQ5NTksImV4cCI6MjA5MjE3MDk1OX0.t7ViNJ_dMn9n6l_sFqpqv73dH3HgMIXF46UCW_jGhWE';
+  const MGR = localStorage.getItem('mgr_pass') || '';
+  supabase_client = supabase.createClient(SB_URL, SB_KEY);
+  MANAGER_PASS = MGR;
+  localStorage.setItem('sb_url', SB_URL); localStorage.setItem('sb_key', SB_KEY);
+  checkPublicReserva();
+  if (new URLSearchParams(window.location.search).get('reserva')) return;
+  document.getElementById('setup-screen').style.display = 'none';
+  showRoleScreen();
+});
+</script>
+</body>
+</html>
