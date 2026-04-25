@@ -1,0 +1,9 @@
+📋 Mi Local
+Conecta con tu base de datos Supabase
+SUPABASE URL
+SUPABASE ANON KEY
+CONTRASEÑA DE MANAGER
+Conectar y empezar →
+
+⏰ Es hora de hacer una tarea
+✕
