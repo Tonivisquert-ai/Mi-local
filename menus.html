@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creador de Menús — Grupo Colmena</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --olive: #6b7c5c;
+  --olive-dark: #4a5a3d;
+  --olive-light: #8fa07a;
+  --cream: #f5f0e6;
+  --paper: #faf7f0;
+  --ink: #2a2318;
+  --ink2: #7a6f5e;
+  --gold: #c9a84c;
+  --border: #d9d2c3;
+  --red: #8b3a1a;
+  --r: 12px;
+  --shadow: 0 2px 16px rgba(42,35,24,0.1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+}
+
+/* LAYOUT */
+.app { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+@media (max-width: 900px) { .app { grid-template-columns: 1fr; } }
+
+/* LEFT PANEL - Editor */
+.panel-left {
+  background: var(--paper);
+  border-right: 1px solid var(--border);
+  padding: 28px 24px;
+  overflow-y: auto;
+  max-height: 100vh;
+}
+
+/* RIGHT PANEL - Preview */
+.panel-right {
+  background: #e8e0d4;
+  padding: 28px 24px;
+  overflow-y: auto;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* HEADER */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.header-logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--olive-dark);
+  letter-spacing: 1px;
+}
+
+.header-sub {
+  font-size: 0.7rem;
+  color: var(--ink2);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* SECTION TITLES */
+.section-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--olive-dark);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.block { margin-bottom: 20px; }
+
+/* INPUTS */
+input, select, textarea {
+  background: #fff;
+  border: 1px solid var(--border);
+  color: var(--ink);
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--olive); }
+
+.row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+.row input, .row select { flex: 1; }
+
+label { font-size: 0.72rem; font-weight: 500; color: var(--ink2); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px; }
+
+/* BUTTONS */
+.btn {
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  font-size: 0.85rem;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.btn-olive { background: var(--olive); color: #fff; }
+.btn-olive:hover { background: var(--olive-dark); }
+.btn-gold { background: var(--gold); color: #fff; }
+.btn-gold:hover { background: #b8943a; }
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--ink2); }
+.btn-ghost:hover { border-color: var(--olive); color: var(--olive); }
+.btn-red { background: var(--red); color: #fff; }
+.btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+.btn-full { width: 100%; }
+
+/* PLATOS */
+.plato-item {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.plato-nombre { flex: 1; font-size: 0.88rem; font-weight: 500; }
+.plato-desc { font-size: 0.75rem; color: var(--ink2); }
+.plato-cat { font-size: 0.7rem; background: var(--cream); color: var(--olive); padding: 2px 8px; border-radius: 50px; border: 1px solid var(--border); }
+
+/* MENU SECTIONS */
+.seccion-menu {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.seccion-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.seccion-nombre-input {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 4px 0;
+  color: var(--olive-dark);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  flex: 1;
+}
+
+/* CÁLCULO */
+.calc-card {
+  background: var(--olive-dark);
+  color: #fff;
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 12px;
+}
+.calc-title { font-family: 'Cormorant Garamond', serif; font-size: 1rem; font-weight: 600; margin-bottom: 12px; color: var(--gold); letter-spacing: 1px; text-transform: uppercase; }
+.calc-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem; }
+.calc-row:last-child { border-bottom: none; }
+.calc-value { font-weight: 600; color: var(--gold); }
+.calc-total { display: flex; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2); }
+.calc-total-label { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-weight: 700; }
+.calc-total-value { font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; font-weight: 700; color: var(--gold); }
+
+/* PREVIEW MENU */
+.menu-preview {
+  background: var(--olive);
+  width: 100%;
+  max-width: 380px;
+  min-height: 600px;
+  border-radius: 4px;
+  padding: 40px 32px;
+  color: #fff;
+  position: relative;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+}
+
+.preview-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 36px; }
+.preview-title { font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; font-weight: 300; line-height: 1.2; }
+.preview-logo { width: 80px; height: 80px; background: rgba(255,255,255,0.15); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; text-align: center; color: rgba(255,255,255,0.7); font-family: 'Cormorant Garamond', serif; letter-spacing: 1px; padding: 8px; }
+
+.preview-divider { height: 1px; background: rgba(255,255,255,0.3); margin: 20px 0; }
+
+.preview-seccion-nombre {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-decoration: underline;
+  margin-bottom: 12px;
+  margin-top: 20px;
+  color: rgba(255,255,255,0.9);
+}
+
+.preview-plato-nombre {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.preview-plato-nombre::before { content: '-'; margin-right: 4px; }
+
+.preview-plato-desc {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: rgba(255,255,255,0.75);
+  margin-bottom: 10px;
+  margin-left: 12px;
+}
+
+.preview-footer {
+  position: absolute;
+  bottom: 32px;
+  left: 32px;
+  right: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.preview-bebida {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-decoration: underline;
+}
+
+.preview-precio {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+/* TABS */
+.tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+.tab { background: var(--cream); border: 1px solid var(--border); color: var(--ink2); padding: 7px 16px; border-radius: 50px; cursor: pointer; font-size: 0.8rem; font-weight: 500; transition: all 0.15s; }
+.tab.active { background: var(--olive); color: #fff; border-color: var(--olive); }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* TOAST */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 10px 20px; border-radius: 50px; font-size: 0.85rem; opacity: 0; transition: all 0.3s; z-index: 999; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.empty { color: var(--ink2); font-size: 0.85rem; text-align: center; padding: 20px; }
+.del-btn { background: none; border: none; color: #ccc; cursor: pointer; padding: 3px 6px; border-radius: 4px; transition: color 0.15s; font-size: 0.85rem; flex-shrink: 0; }
+.del-btn:hover { color: var(--red); }
+
+.badge { font-size: 0.68rem; padding: 2px 8px; border-radius: 50px; font-weight: 600; }
+.badge-bebida { background: rgba(201,168,76,0.15); color: var(--gold); border: 1px solid rgba(201,168,76,0.3); }
+
+/* HOJA SERVICIO */
+.servicio-doc {
+  background: #fff;
+  width: 100%;
+  max-width: 380px;
+  border-radius: 4px;
+  padding: 28px 24px;
+  margin-top: 20px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+  font-size: 0.85rem;
+}
+.servicio-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid var(--olive); padding-bottom: 14px; }
+.servicio-title { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 700; color: var(--olive-dark); }
+.servicio-sub { font-size: 0.72rem; color: var(--ink2); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+.servicio-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f0ede6; }
+.servicio-label { color: var(--ink2); }
+.servicio-value { font-weight: 600; color: var(--olive-dark); }
+.servicio-section { font-family: 'Cormorant Garamond', serif; font-size: 0.8rem; font-weight: 700; color: var(--olive); text-transform: uppercase; letter-spacing: 1px; margin: 12px 0 4px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- LEFT: EDITOR -->
+  <div class="panel-left">
+    <div class="header">
+      <div>
+        <div class="header-logo">🐝 GRUPO COLMENA</div>
+        <div class="header-sub">Creador de Menús</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="showTab('platos')">🍽️ Platos</div>
+      <div class="tab" onclick="showTab('menu')">📋 Menú</div>
+      <div class="tab" onclick="showTab('calculo')">🧮 Cálculo</div>
+    </div>
+
+    <!-- TAB: PLATOS -->
+    <div id="tab-platos" class="tab-content active">
+      <div class="block">
+        <div class="section-title">➕ Añadir plato</div>
+        <div class="row">
+          <div style="flex:2">
+            <label>Nombre del plato</label>
+            <input type="text" id="plato-nombre" placeholder="Ej: Solomillo ibérico">
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:2">
+            <label>Descripción</label>
+            <input type="text" id="plato-desc" placeholder="a la brasa, con guarnición de temporada">
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <label>Categoría / Sección</label>
+            <input type="text" id="plato-cat" placeholder="Entrantes, Principal, Postre...">
+          </div>
+          <div style="flex:1">
+            <label>Coste por ración (€)</label>
+            <input type="number" id="plato-coste" placeholder="0.00" step="0.5" min="0">
+          </div>
+        </div>
+        <button class="btn btn-olive btn-full" onclick="addPlato()" style="margin-top:4px">Guardar plato</button>
+      </div>
+
+      <div class="block">
+        <div class="section-title">📚 Catálogo de platos</div>
+        <div id="lista-platos"><div class="empty">Sin platos todavía</div></div>
+      </div>
+    </div>
+
+    <!-- TAB: MENÚ -->
+    <div id="tab-menu" class="tab-content">
+      <div class="block">
+        <div class="section-title">📋 Datos del menú</div>
+        <div class="row">
+          <div style="flex:2">
+            <label>Nombre del menú</label>
+            <input type="text" id="menu-nombre" placeholder="Ej: Menú Mayoría de Edad" oninput="updatePreview()">
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <label>Local</label>
+            <select id="menu-local" onchange="updatePreview()">
+              <option value="casino">Casino l'Agricultura</option>
+              <option value="bonita">Bonita Beach Club</option>
+            </select>
+          </div>
+          <div style="flex:1">
+            <label>Precio por comensal (€)</label>
+            <input type="number" id="menu-precio" placeholder="0.00" step="0.5" min="0" oninput="updatePreview()">
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <label>Bebida incluida</label>
+            <select id="menu-bebida" onchange="updatePreview()">
+              <option value="BEBIDA INCLUIDA">Bebida incluida</option>
+              <option value="VINO Y AGUA INCLUIDOS">Vino y agua incluidos</option>
+              <option value="BEBIDA NO INCLUIDA">Sin bebida</option>
+              <option value="">Personalizada:</option>
+            </select>
+          </div>
+          <div style="flex:1">
+            <label>Bebida personalizada</label>
+            <input type="text" id="menu-bebida-custom" placeholder="Ej: Vino, agua y cava" oninput="updatePreview()">
+          </div>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="section-title">📂 Secciones del menú</div>
+        <div class="row">
+          <input type="text" id="nueva-seccion" placeholder="Nombre sección (ej: Entrantes)">
+          <button class="btn btn-olive btn-sm" onclick="addSeccion()">+ Añadir</button>
+        </div>
+        <div id="secciones-menu"></div>
+      </div>
+    </div>
+
+    <!-- TAB: CÁLCULO -->
+    <div id="tab-calculo" class="tab-content">
+      <div class="block">
+        <div class="section-title">👥 Datos del evento</div>
+        <div class="row">
+          <div style="flex:1">
+            <label>Comensales</label>
+            <input type="number" id="calc-comensales" placeholder="50" min="1" oninput="calcular()">
+          </div>
+          <div style="flex:1">
+            <label>Precio/comensal (€)</label>
+            <input type="number" id="calc-precio" placeholder="35" step="0.5" min="0" oninput="calcular()">
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <label>Nº de platos en el menú</label>
+            <input type="number" id="calc-platos" placeholder="3" min="1" oninput="calcular()">
+          </div>
+          <div style="flex:1">
+            <label>¿Bebida incluida?</label>
+            <select id="calc-bebida" onchange="calcular()">
+              <option value="si">Sí</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <label>Tarifa camarero (€/h)</label>
+            <input type="number" id="calc-tarifa" placeholder="14" step="0.5" min="0" value="14" oninput="calcular()">
+          </div>
+          <div style="flex:1">
+            <label>Margen beneficio (%)</label>
+            <input type="number" id="calc-margen" placeholder="30" min="0" max="100" value="30" oninput="calcular()">
+          </div>
+        </div>
+      </div>
+
+      <div id="calc-resultado"></div>
+
+      <div style="background:var(--cream);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:8px">
+        <div class="section-title" style="margin-bottom:8px">💡 Referencia precios Valencia 2025</div>
+        <div style="font-size:0.78rem;color:var(--ink2);line-height:1.8">
+          <div>🍽️ Menú básico grupos (entrante + principal): <strong>28–32€/p</strong></div>
+          <div>🥘 Menú completo (+ postre + café): <strong>38–42€/p</strong></div>
+          <div>🍷 Menú con bebida incluida: <strong>45–50€/p</strong></div>
+          <div>🎉 Evento especial (boda, comunión): <strong>55–60€/p</strong></div>
+          <div style="margin-top:6px;color:var(--olive)">✓ Margen neto saludable: 25–35%</div>
+        </div>
+      </div>
+
+      <div class="block" style="margin-top:8px">
+        <button class="btn btn-gold btn-full" onclick="generarPDFs()">📄 Generar PDFs (menú + servicio)</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: PREVIEW -->
+  <div class="panel-right">
+    <div style="font-size:0.72rem;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">Vista previa</div>
+
+    <!-- PREVIEW MENÚ -->
+    <div class="menu-preview" id="menu-preview">
+      <div class="preview-header">
+        <div class="preview-title" id="prev-titulo">Menú<br>del Evento</div>
+        <div class="preview-logo">
+          GRUPO<br>COLMENA
+        </div>
+      </div>
+
+      <div id="prev-secciones"></div>
+
+      <div class="preview-footer">
+        <div class="preview-bebida" id="prev-bebida">BEBIDA INCLUIDA</div>
+        <div class="preview-precio" id="prev-precio">—</div>
+      </div>
+    </div>
+
+    <!-- HOJA SERVICIO -->
+    <div class="servicio-doc" id="servicio-preview" style="display:none">
+      <div class="servicio-header">
+        <div class="servicio-title">🐝 HOJA DE SERVICIO</div>
+        <div class="servicio-sub" id="serv-nombre-local">Grupo Colmena</div>
+      </div>
+      <div id="serv-contenido"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+//  STATE
+// ============================================================
+let platos = JSON.parse(localStorage.getItem('gc_platos') || '[]');
+let menuSecciones = [];
+let calcData = {};
+
+function save() { localStorage.setItem('gc_platos', JSON.stringify(platos)); }
+
+// ============================================================
+//  TABS
+// ============================================================
+function showTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+  if (tab === 'calculo') calcular();
+}
+
+// ============================================================
+//  PLATOS
+// ============================================================
+function addPlato() {
+  const nombre = document.getElementById('plato-nombre').value.trim();
+  const desc = document.getElementById('plato-desc').value.trim();
+  const cat = document.getElementById('plato-cat').value.trim() || 'General';
+  const coste = parseFloat(document.getElementById('plato-coste').value) || 0;
+  if (!nombre) return;
+  platos.push({ id: Date.now(), nombre, desc, cat, coste });
+  save();
+  document.getElementById('plato-nombre').value = '';
+  document.getElementById('plato-desc').value = '';
+  document.getElementById('plato-cat').value = '';
+  document.getElementById('plato-coste').value = '';
+  renderPlatos();
+  toast('Plato guardado ✓');
+}
+
+function deletePlato(id) {
+  platos = platos.filter(p => p.id !== id);
+  save(); renderPlatos();
+}
+
+function renderPlatos() {
+  const lista = document.getElementById('lista-platos');
+  if (!platos.length) { lista.innerHTML = '<div class="empty">Sin platos todavía</div>'; return; }
+  const cats = [...new Set(platos.map(p => p.cat))];
+  lista.innerHTML = cats.map(cat => `
+    <div style="margin-bottom:12px">
+      <div style="font-size:0.7rem;font-weight:700;color:var(--olive);text-transform:uppercase;letter-spacing:1px;padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:6px">${cat}</div>
+      ${platos.filter(p => p.cat === cat).map(p => `
+      <div class="plato-item">
+        <div style="flex:1">
+          <div class="plato-nombre">${p.nombre}</div>
+          ${p.desc ? `<div class="plato-desc">${p.desc}</div>` : ''}
+        </div>
+        ${p.coste ? `<span style="font-size:0.78rem;color:var(--gold);font-weight:600">${p.coste}€</span>` : ''}
+        <button class="del-btn" onclick="deletePlato(${p.id})">✕</button>
+      </div>`).join('')}
+    </div>`).join('');
+}
+
+// ============================================================
+//  SECCIONES DEL MENÚ
+// ============================================================
+function addSeccion() {
+  const nombre = document.getElementById('nueva-seccion').value.trim();
+  if (!nombre) return;
+  menuSecciones.push({ id: Date.now(), nombre, platos: [] });
+  document.getElementById('nueva-seccion').value = '';
+  renderSecciones();
+  updatePreview();
+}
+
+function deleteSeccion(id) {
+  menuSecciones = menuSecciones.filter(s => s.id !== id);
+  renderSecciones(); updatePreview();
+}
+
+function addPlatoASeccion(seccionId) {
+  const sel = document.getElementById('sel-plato-' + seccionId);
+  const platId = parseInt(sel.value);
+  if (!platId) return;
+  const plato = platos.find(p => p.id === platId);
+  if (!plato) return;
+  const seccion = menuSecciones.find(s => s.id === seccionId);
+  if (seccion && !seccion.platos.find(p => p.id === platId)) {
+    seccion.platos.push({...plato});
+    renderSecciones(); updatePreview();
+  }
+  sel.value = '';
+}
+
+function removePlatoDeSeccion(seccionId, platoId) {
+  const seccion = menuSecciones.find(s => s.id === seccionId);
+  if (seccion) seccion.platos = seccion.platos.filter(p => p.id !== platoId);
+  renderSecciones(); updatePreview();
+}
+
+function renderSecciones() {
+  const div = document.getElementById('secciones-menu');
+  if (!menuSecciones.length) { div.innerHTML = '<div class="empty">Añade secciones al menú</div>'; return; }
+  div.innerHTML = menuSecciones.map(s => `
+    <div class="seccion-menu">
+      <div class="seccion-header">
+        <input class="seccion-nombre-input" value="${s.nombre}" onchange="renameSeccion(${s.id}, this.value)">
+        <button class="del-btn" onclick="deleteSeccion(${s.id})">✕</button>
+      </div>
+      ${s.platos.map(p => `
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f5f0e6">
+          ${p.esEleccion ? `
+          <div style="flex:1">
+            <div style="font-size:0.82rem;font-weight:600;color:var(--olive)">⚡ A ELEGIR:</div>
+            ${(p.opciones||[]).map((o,i) => `
+              <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+                <span style="font-size:0.82rem">• ${o.nombre}${o.desc?' <em style=color:var(--ink2)>'+o.desc+'</em>':''}</span>
+                <input type="number" placeholder="cant." min="0" value="${o.cantidad||''}"
+                  onchange="updateCantidadOpcion(${s.id},${p.id},${i},this.value)"
+                  style="width:60px;padding:3px 6px;font-size:0.75rem;border:1px solid var(--border);border-radius:4px">
+                <button class="del-btn" onclick="removeOpcion(${s.id},${p.id},${i})">✕</button>
+              </div>`).join('')}
+            <div style="display:flex;gap:4px;margin-top:6px">
+              <input type="text" id="nueva-opcion-nom-${s.id}-${p.id}" placeholder="Nombre opción..." style="flex:2;font-size:0.78rem;padding:4px 8px">
+              <input type="text" id="nueva-opcion-desc-${s.id}-${p.id}" placeholder="Descripción..." style="flex:2;font-size:0.78rem;padding:4px 8px">
+              <button class="btn btn-olive btn-sm" onclick="addOpcion(${s.id},${p.id})" style="font-size:0.72rem">+</button>
+            </div>
+          </div>` : `
+          <span style="flex:1;font-size:0.85rem">-${p.nombre}${p.desc ? ` <span style='color:var(--ink2);font-size:0.78rem;font-style:italic'>${p.desc}</span>` : ''}</span>`}
+          <button class="del-btn" onclick="removePlatoDeSeccion(${s.id}, ${p.id})">✕</button>
+        </div>`).join('')}
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <select id="sel-plato-${s.id}" style="flex:1;font-size:0.82rem">
+          <option value="">Añadir plato fijo...</option>
+          ${platos.map(p => `<option value="${p.id}">${p.nombre} (${p.cat})</option>`).join('')}
+        </select>
+        <button class="btn btn-olive btn-sm" onclick="addPlatoASeccion(${s.id})">+</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <button class="btn btn-ghost btn-sm" onclick="addPlatoEleccion(${s.id})" style="font-size:0.75rem;color:var(--olive)">⚡ + Plato a elegir (carne/pescado/arroz...)</button>
+      </div>
+    </div>`).join('');
+}
+
+function renameSeccion(id, nombre) {
+  const s = menuSecciones.find(s => s.id === id);
+  if (s) { s.nombre = nombre; updatePreview(); }
+}
+
+// ============================================================
+//  PLATOS A ELEGIR
+// ============================================================
+function addPlatoEleccion(seccionId) {
+  const seccion = menuSecciones.find(s => s.id === seccionId);
+  if (!seccion) return;
+  seccion.platos.push({ id: Date.now(), esEleccion: true, opciones: [] });
+  renderSecciones(); updatePreview();
+}
+
+function addOpcion(seccionId, platoId) {
+  const seccion = menuSecciones.find(s => s.id === seccionId);
+  const plato = seccion?.platos.find(p => p.id === platoId);
+  if (!plato) return;
+  const nom = document.getElementById(`nueva-opcion-nom-${seccionId}-${platoId}`)?.value.trim();
+  const desc = document.getElementById(`nueva-opcion-desc-${seccionId}-${platoId}`)?.value.trim();
+  if (!nom) return;
+  plato.opciones.push({ nombre: nom, desc, cantidad: null });
+  renderSecciones(); updatePreview();
+}
+
+function removeOpcion(seccionId, platoId, idx) {
+  const seccion = menuSecciones.find(s => s.id === seccionId);
+  const plato = seccion?.platos.find(p => p.id === platoId);
+  if (!plato) return;
+  plato.opciones.splice(idx, 1);
+  renderSecciones(); updatePreview();
+}
+
+function updateCantidadOpcion(seccionId, platoId, idx, val) {
+  const seccion = menuSecciones.find(s => s.id === seccionId);
+  const plato = seccion?.platos.find(p => p.id === platoId);
+  if (!plato || !plato.opciones[idx]) return;
+  plato.opciones[idx].cantidad = parseInt(val) || null;
+  updatePreview();
+}
+
+// ============================================================
+//  PREVIEW
+// ============================================================
+function updatePreview() {
+  const nombre = document.getElementById('menu-nombre').value || 'Menú del Evento';
+  const precio = document.getElementById('menu-precio').value;
+  const bebidaSel = document.getElementById('menu-bebida').value;
+  const bebidaCustom = document.getElementById('menu-bebida-custom').value;
+  const bebida = bebidaCustom || bebidaSel || 'BEBIDA INCLUIDA';
+
+  // Update title
+  const words = nombre.split(' ');
+  const titleHtml = words.length > 2
+    ? words.slice(0, Math.ceil(words.length/2)).join(' ') + '<br>' + words.slice(Math.ceil(words.length/2)).join(' ')
+    : nombre;
+  document.getElementById('prev-titulo').innerHTML = titleHtml;
+  document.getElementById('prev-precio').textContent = precio ? precio + ',00€' : '—';
+  document.getElementById('prev-bebida').textContent = bebida.toUpperCase();
+
+  // Secciones
+  const secDiv = document.getElementById('prev-secciones');
+  secDiv.innerHTML = menuSecciones.map(s => `
+    <div>
+      <div class="preview-seccion-nombre">${s.nombre}</div>
+      ${s.platos.map(p => p.esEleccion ? `
+        <div style="margin-bottom:10px">
+          <div style="font-size:0.7rem;letter-spacing:2px;color:rgba(255,255,255,0.6);margin-bottom:4px">A ELEGIR:</div>
+          ${(p.opciones||[]).map(o => `
+            <div class="preview-plato-nombre">${o.nombre}</div>
+            ${o.desc ? `<div class="preview-plato-desc">${o.desc}</div>` : '<div style="margin-bottom:6px"></div>'}
+          `).join('')}
+        </div>` : `
+        <div class="preview-plato-nombre">${p.nombre}</div>
+        ${p.desc ? `<div class="preview-plato-desc">${p.desc}</div>` : '<div style="margin-bottom:10px"></div>'}
+      `).join('')}
+      <div class="preview-divider"></div>
+    </div>`).join('');
+}
+
+// ============================================================
+//  CÁLCULO
+// ============================================================
+function calcular() {
+  const comensales = parseInt(document.getElementById('calc-comensales').value) || 0;
+  const precio = parseFloat(document.getElementById('calc-precio').value) || 0;
+  const numPlatos = parseInt(document.getElementById('calc-platos').value) || 0;
+  const bebida = document.getElementById('calc-bebida').value;
+  const tarifa = parseFloat(document.getElementById('calc-tarifa').value) || 10;
+  const margen = parseFloat(document.getElementById('calc-margen').value) || 0;
+
+  if (!comensales || !precio) { document.getElementById('calc-resultado').innerHTML = ''; return; }
+
+  // Camareros: 1 cada 25 comensales a 14€/h
+  const camareros = Math.ceil(comensales / 25);
+
+  // Tiempos de servicio reales:
+  // Entrantes: 15 min cada uno | Principal: 40 min | Postre: 20 min | Café: 20 min
+  // Base: 2h 30min para menú completo (3 entrantes + principal + postre + café)
+  // Ajuste por platos extra o menos
+  const minutosBase = 150; // 2h 30min
+  const platosBase = 6; // 3 entrantes + principal + postre + café
+  const minutosPorPlato = minutosBase / platosBase; // ~25 min/plato
+  const minutosServicio = Math.round(numPlatos > 0 ? numPlatos * minutosPorPlato : minutosBase);
+  const horasServicio = Math.round(minutosServicio / 60 * 10) / 10; // con decimales
+
+  // Bebida estimada (si incluida):
+  // Vino: 0.4L/persona (media botella), Agua: 0.3L/persona, Refresco: 0.5 ud/persona, Cerveza: 0.5 ud/persona
+  const botellaVino = bebida === 'si' ? Math.ceil(comensales * 0.4 / 0.75) : 0;
+  const botellaAgua = bebida === 'si' ? Math.ceil(comensales * 0.3 / 1.5) : 0;
+  const refrescos = bebida === 'si' ? Math.ceil(comensales * 0.5) : 0;
+  const cervezas = bebida === 'si' ? Math.ceil(comensales * 0.5) : 0;
+
+  // Coste total platos del menú seleccionados
+  let costePlatos = 0;
+  menuSecciones.forEach(s => {
+    s.platos.forEach(p => { costePlatos += (p.coste || 0); });
+  });
+
+  // Ingresos
+  const ingresos = comensales * precio;
+  const costeCamareros = camareros * horasServicio * tarifa;
+  const costeTotal = costePlatos * (comensales / 4) + costeCamareros;
+  const beneficio = ingresos - costeTotal;
+  const margenReal = ingresos > 0 ? Math.round(beneficio / ingresos * 100) : 0;
+
+  calcData = { comensales, precio, camareros, horasServicio, minutosServicio, botellaVino, botellaAgua, refrescos, cervezas, ingresos, costeCamareros, costeTotal, beneficio, margenReal, tarifa, numPlatos, bebida };
+
+  document.getElementById('calc-resultado').innerHTML = `
+    <div class="calc-card">
+      <div class="calc-title">📊 Cálculo del evento</div>
+      <div class="calc-row"><span>👥 Comensales</span><span class="calc-value">${comensales} personas</span></div>
+      <div class="calc-row"><span>🍽️ Camareros necesarios</span><span class="calc-value">${camareros} (1 cada 25p)</span></div>
+      <div class="calc-row"><span>⏱️ Duración estimada del servicio</span><span class="calc-value">${horasServicio}h (${minutosServicio} min)</span></div>
+      ${bebida === 'si' ? `
+      <div class="calc-row"><span>🍷 Vino (btl 0.75L)</span><span class="calc-value">${botellaVino} botellas</span></div>
+      <div class="calc-row"><span>🍺 Cervezas</span><span class="calc-value">${cervezas} uds</span></div>
+      <div class="calc-row"><span>🥤 Refrescos</span><span class="calc-value">${refrescos} uds</span></div>
+      <div class="calc-row"><span>💧 Agua (btl 1.5L)</span><span class="calc-value">${botellaAgua} botellas</span></div>` : ''}
+      <div class="calc-row"><span>💶 Coste camareros</span><span class="calc-value">${costeCamareros.toFixed(2)}€</span></div>
+      <div class="calc-row"><span>💰 Ingresos totales</span><span class="calc-value">${ingresos.toFixed(2)}€</span></div>
+      <div class="calc-row"><span>📈 Margen estimado</span><span class="calc-value">${margenReal}%</span></div>
+      <div class="calc-total">
+        <span class="calc-total-label">Beneficio estimado</span>
+        <span class="calc-total-value">${beneficio.toFixed(2)}€</span>
+      </div>
+    </div>
+
+    <div class="servicio-doc" style="margin-bottom:12px">
+      <div class="servicio-header">
+        <div class="servicio-title">🐝 HOJA DE SERVICIO</div>
+        <div class="servicio-sub">${document.getElementById('menu-nombre').value || 'Menú del Evento'}</div>
+      </div>
+      <div class="servicio-section">Equipo</div>
+      <div class="servicio-row"><span class="servicio-label">Camareros</span><span class="servicio-value">${camareros} personas</span></div>
+      <div class="servicio-row"><span class="servicio-label">Horas de servicio</span><span class="servicio-value">${horasServicio}h</span></div>
+      <div class="servicio-section">Bebida estimada</div>
+      ${bebida === 'si' ? `
+      <div class="servicio-row"><span class="servicio-label">Vino (btl 0.75L)</span><span class="servicio-value">${botellaVino} botellas</span></div>
+      <div class="servicio-row"><span class="servicio-label">Agua (btl 1.5L)</span><span class="servicio-value">${botellaAgua} botellas</span></div>
+      <div class="servicio-row"><span class="servicio-label">Refrescos</span><span class="servicio-value">${refrescos} unidades</span></div>` : '<div class="servicio-row"><span class="servicio-label">Bebida</span><span class="servicio-value">No incluida</span></div>'}
+      <div class="servicio-section">Económico</div>
+      <div class="servicio-row"><span class="servicio-label">Precio/comensal</span><span class="servicio-value">${precio}€</span></div>
+      <div class="servicio-row"><span class="servicio-label">Total facturación</span><span class="servicio-value">${ingresos.toFixed(2)}€</span></div>
+      <div class="servicio-row"><span class="servicio-label">Coste camareros</span><span class="servicio-value">${costeCamareros.toFixed(2)}€</span></div>
+      <div class="servicio-row" style="font-weight:700;color:var(--olive-dark)"><span>Beneficio estimado</span><span>${beneficio.toFixed(2)}€</span></div>
+    </div>`;
+}
+
+// ============================================================
+//  GENERAR PDFs
+// ============================================================
+function generarPDFs() {
+  const nombre = document.getElementById('menu-nombre').value || 'Menú del Evento';
+  const precio = document.getElementById('menu-precio').value || '—';
+  const bebidaSel = document.getElementById('menu-bebida').value;
+  const bebidaCustom = document.getElementById('menu-bebida-custom').value;
+  const bebida = (bebidaCustom || bebidaSel || 'BEBIDA INCLUIDA').toUpperCase();
+  const local = document.getElementById('menu-local').value;
+  const localNombre = local === 'casino' ? "Casino l'Agricultura" : 'Bonita Beach Club';
+
+  // PDF 1: Menú para el cliente
+  const menuHtml = `<!DOCTYPE html><html><head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+  <style>
+    @page { size: A4; margin: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #6b7c5c; color: #fff; font-family: 'Cormorant Garamond', serif; width: 210mm; min-height: 297mm; padding: 40mm 32mm; position: relative; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
+    .title { font-size: 52px; font-weight: 300; line-height: 1.15; }
+    .logo-box { width: 90px; height: 90px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 9px; letter-spacing: 2px; padding: 10px; line-height: 1.5; }
+    .divider { height: 1px; background: rgba(255,255,255,0.3); margin: 24px 0; }
+    .seccion-nombre { font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; text-decoration: underline; margin-bottom: 14px; margin-top: 24px; color: rgba(255,255,255,0.9); }
+    .plato-nombre { font-size: 18px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+    .plato-nombre::before { content: '-'; margin-right: 4px; }
+    .plato-desc { font-size: 13px; font-style: italic; color: rgba(255,255,255,0.75); margin-bottom: 14px; margin-left: 14px; }
+    .footer { position: fixed; bottom: 32mm; left: 32mm; right: 32mm; display: flex; justify-content: space-between; align-items: flex-end; }
+    .bebida { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; text-decoration: underline; }
+    .precio { font-size: 36px; font-weight: 700; }
+  </style></head><body>
+  <div class="header">
+    <div class="title">${nombre.replace(/ /g, '<br>')}</div>
+    <div class="logo-box">GRUPO<br>COLMENA<br><br>${localNombre.toUpperCase()}</div>
+  </div>
+  ${menuSecciones.map(s => `
+    <div class="seccion-nombre">${s.nombre}</div>
+    ${s.platos.map(p => p.esEleccion ? `
+      <div style="font-size:10px;letter-spacing:2px;color:rgba(255,255,255,0.6);margin-bottom:6px">A ELEGIR:</div>
+      ${(p.opciones||[]).map(o => `
+        <div class="plato-nombre">${o.nombre}</div>
+        ${o.desc ? `<div class="plato-desc">${o.desc}</div>` : '<div style="margin-bottom:14px"></div>'}
+      `).join('')}` : `
+      <div class="plato-nombre">${p.nombre}</div>
+      ${p.desc ? `<div class="plato-desc">${p.desc}</div>` : '<div style="margin-bottom:14px"></div>'}
+    `).join('')}
+    <div class="divider"></div>
+  `).join('')}
+  <div class="footer">
+    <div class="bebida">${bebida}</div>
+    <div class="precio">${precio},00€</div>
+  </div>
+  <script>window.onload=()=>window.print()<\/script>
+  </body></html>`;
+
+  const w1 = window.open('', '_blank');
+  w1.document.write(menuHtml);
+  w1.document.close();
+
+  // PDF 2: Hoja de servicio
+  setTimeout(() => {
+    if (!calcData.comensales) { toast('Rellena los datos de cálculo primero'); return; }
+    const { comensales, precio: p, camareros, horasServicio, botellaVino, botellaAgua, refrescos, ingresos, costeCamareros, beneficio, margenReal, bebida: beb } = calcData;
+
+    const servicioHtml = `<!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+      @page { size: A4; margin: 20mm 18mm; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: 'DM Sans', sans-serif; color: #2a2318; font-size: 12px; }
+      .header { text-align: center; padding-bottom: 16px; border-bottom: 2px solid #6b7c5c; margin-bottom: 20px; }
+      .title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 700; color: #4a5a3d; }
+      .sub { font-size: 10px; color: #888; letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
+      .section { font-family: 'Cormorant Garamond', serif; font-size: 11px; font-weight: 700; color: #6b7c5c; text-transform: uppercase; letter-spacing: 2px; margin: 16px 0 6px; }
+      .row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f0ede6; }
+      .label { color: #7a6f5e; }
+      .value { font-weight: 600; color: #4a5a3d; }
+      .total-row { display: flex; justify-content: space-between; padding: 10px 0; border-top: 2px solid #6b7c5c; margin-top: 8px; font-weight: 700; font-size: 14px; }
+      .menu-items { margin-top: 20px; padding-top: 16px; border-top: 1px solid #d9d2c3; }
+      .menu-section { font-family:'Cormorant Garamond',serif; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:2px; color:#6b7c5c; margin: 12px 0 4px; }
+      .menu-plato { font-size: 11px; padding: 3px 0; }
+      .notas { margin-top: 40px; padding-top: 16px; border-top: 1px solid #d9d2c3; }
+      .nota-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+      .nota-line { height: 24px; border-bottom: 1px solid #d9d2c3; margin-bottom: 4px; }
+    </style></head><body>
+    <div class="header">
+      <div class="title">🐝 HOJA DE SERVICIO INTERNO</div>
+      <div class="sub">${nombre} — ${localNombre}</div>
+    </div>
+    <div class="section">Equipo de servicio</div>
+    <div class="row"><span class="label">Camareros necesarios</span><span class="value">${camareros} personas (1 cada 25 comensales)</span></div>
+    <div class="row"><span class="label">Comensales</span><span class="value">${comensales} personas</span></div>
+    <div class="row"><span class="label">Duración estimada</span><span class="value">${horasServicio}h (${minutosServicio} min)</span></div>
+    <div class="row"><span class="label">Tarifa camarero</span><span class="value">${calcData.tarifa}€/h</span></div>
+    <div class="row"><span class="label">Coste camareros</span><span class="value">${costeCamareros.toFixed(2)}€</span></div>
+    ${beb === 'si' ? `
+    <div class="section">Bebida estimada</div>
+    <div class="row"><span class="label">Vino (botellas 0.75L)</span><span class="value">${botellaVino} botellas (0.5L/persona)</span></div>
+    <div class="row"><span class="label">Agua (botellas 1.5L)</span><span class="value">${botellaAgua} botellas</span></div>
+    <div class="row"><span class="label">Refrescos</span><span class="value">${refrescos} unidades</span></div>` : ''}
+    <div class="section">Económico</div>
+    <div class="row"><span class="label">Precio por comensal</span><span class="value">${p}€</span></div>
+    <div class="row"><span class="label">Total facturación</span><span class="value">${ingresos.toFixed(2)}€</span></div>
+    <div class="row"><span class="label">Coste camareros</span><span class="value">${costeCamareros.toFixed(2)}€</span></div>
+    <div class="row"><span class="label">Margen estimado</span><span class="value">${margenReal}%</span></div>
+    <div class="total-row"><span>Beneficio estimado</span><span>${beneficio.toFixed(2)}€</span></div>
+    <div class="menu-items">
+      <div class="section">Menú</div>
+      ${menuSecciones.map(s => `
+        <div class="menu-section">${s.nombre}</div>
+        ${s.platos.map(p => p.esEleccion ? `
+          <div class="menu-plato" style="color:#6b7c5c;font-weight:600">⚡ A ELEGIR:</div>
+          ${(p.opciones||[]).map(o => `<div class="menu-plato" style="padding-left:12px">• ${o.nombre}${o.desc?` — ${o.desc}`:''}${o.cantidad?' → <strong>'+o.cantidad+' personas</strong>':''}</div>`).join('')}
+        ` : `<div class="menu-plato">- ${p.nombre}${p.desc ? ` <em style="color:#888">${p.desc}</em>` : ''}</div>`).join('')}
+      `).join('')}
+    </div>
+    <div class="notas">
+      <div class="nota-label">Notas adicionales</div>
+      <div class="nota-line"></div><div class="nota-line"></div><div class="nota-line"></div>
+    </div>
+    <script>window.onload=()=>window.print()<\/script>
+    </body></html>`;
+
+    const w2 = window.open('', '_blank');
+    w2.document.write(servicioHtml);
+    w2.document.close();
+  }, 500);
+
+  toast('Generando PDFs... ✓');
+}
+
+// ============================================================
+//  TOAST & INIT
+// ============================================================
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// Init
+renderPlatos();
+</script>
+</body>
+</html>
